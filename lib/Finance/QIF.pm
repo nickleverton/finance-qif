@@ -1,0 +1,995 @@
+package Finance::QIF;
+
+use 5.008006;
+use strict;
+use warnings;
+
+our $VERSION = '0.01';
+
+use Carp;
+use IO::File;
+
+my %noninvestment = (
+    "D" => "date",
+    "T" => "amount",
+    "C" => "status",
+    "N" => "number",
+    "P" => "payee",
+    "M" => "memo",
+    "A" => "address",
+    "L" => "category",
+    "S" => "category",
+    "E" => "memo",
+    '$' => "amount"
+);
+
+my %investment = (
+    "D" => "date",
+    "N" => "action",
+    "Y" => "security",
+    "I" => "price",
+    "Q" => "quantity",
+    "T" => "transaction",
+    "C" => "status",
+    "P" => "text",
+    "M" => "memo",
+    "O" => "commission",
+    "L" => "account",
+    '$' => "amount"
+);
+
+my %account = (
+    "N" => "name",
+    "D" => "description",
+    "L" => "limit",
+    "X" => "tax",
+    "A" => "address",
+    "T" => "type",
+    'B' => "balance"
+);
+
+my %category = (
+    "N" => "name",
+    "D" => "description",
+    "E" => "expense",
+    "I" => "income",
+    "T" => "tax",
+    "R" => "schedule"
+);
+
+my %class = (
+    "N" => "name",
+    "D" => "description"
+);
+
+my %memorized = (
+    "K" => "transaction",
+    "T" => "amount",
+    "C" => "status",
+    "P" => "payee",
+    "M" => "memo",
+    "A" => "address",
+    "L" => "category",
+    "S" => "category",
+    "E" => "memo",
+    '$' => "amount",
+    "1" => "first",
+    "2" => "years",
+    "3" => "made",
+    "4" => "periods",
+    "5" => "interest",
+    "6" => "balance",
+    "7" => "loan"
+);
+
+my %security = (
+    "N" => "security",
+    "S" => "symbol",
+    "T" => "type",
+    "G" => "goal"
+);
+
+my %budget = (
+    "N" => "name",
+    "D" => "description",
+    "E" => "expense",
+    "I" => "income",
+    "T" => "tax",
+    "R" => "schedule",
+    "B" => "amount"
+);
+
+my %payee = (
+    "P" => "name",
+    "A" => "address",
+    "C" => "city",
+    "S" => "state",
+    "Z" => "zip",
+    "N" => "phone",
+    "#" => "account"
+);
+
+my %nofields = ();
+
+my %header = (
+    "Type:Bank"         => \%noninvestment,
+    "Type:Cash"         => \%noninvestment,
+    "Type:CCard"        => \%noninvestment,
+    "Type:Invst"        => \%investment,
+    "Type:Oth A"        => \%noninvestment,
+    "Type:Oth L"        => \%noninvestment,
+    "Account"           => \%account,
+    "Type:Cat"          => \%category,
+    "Type:Class"        => \%class,
+    "Type:Memorized"    => \%memorized,
+    "Type:Security"     => \%security,
+    "Type:Budget"       => \%budget,
+    "Type:Payee"        => \%payee,
+    "Type:Prices"       => "",
+    "Option:AutoSwitch" => \%nofields,
+    "Option:AllXfr"     => \%nofields,
+    "Clear:AutoSwitch"  => \%nofields
+);
+
+sub new {
+    my $class = shift;
+    my $self  = {@_};
+    $self->{file} ||="";
+    $self->{output_record_separator} ||= "\r";
+    $self->{input_record_separator} ||="\r";
+    $self->{debug} ||=0;
+    $self->{linecount} = 0;
+    bless( $self, $class );
+    print "File name: " . $self->{file} . "\n" if $self->{debug};
+    if ($self->{file}) {
+      $self->open();
+    }
+    return $self;
+}
+
+sub file {
+  my $self=shift;
+  if ($_[0]) {
+     $self->{file}=shift; 
+  }
+  return $self->{file};
+}
+
+sub open {
+  my $self=shift;
+  if ($_[0]) {
+     file(shift); 
+  }
+  if ( $self->{file} ) {
+      $self->{filehandle} = new IO::File $self->{file};
+      if ( !defined( $self->{filehandle} ) ) {
+         croak 'Failed to open file "'.$self->{file} ."\".";
+      }
+  } else {
+    croak "No file specified.";
+  }
+}
+
+sub next {
+    my $self = shift;
+    my %object;
+    my $continue = 1;
+    if ( $self->{filehandle}->eof ) {
+        return undef;
+    }
+    if ( exists( $self->{header} ) ) {
+        $object{header} = $self->{header};
+    }
+    while ( !$self->{filehandle}->eof && $continue ) {
+        my $line = $self->_getline();
+        next if ( $line =~ /^\s*$/ );
+        my ( $field, $value ) = $self->_parseline($line);
+        if ( $field eq '!' ) {
+            $self->{header} = $value;
+            $object{header} = $value;
+            if ( !exists( $header{$value} ) ) {
+                $self->_warning( 'Unknown header format "' . $value . '"' );
+            }
+        }
+        else {
+            if ( $field eq '^' ) {
+                $continue = 0;
+            }
+            else {
+                if ( !exists( $header{ $object{header} } ) ) {
+                    $self->_warning("Unknown header can't process line");
+                }
+                elsif ( $object{header} eq "Type:Prices" ) {
+                    $object{"symbol"} = $field;
+                    push( @{ $object{"prices"} }, $value );
+                }
+                elsif ( $field eq 'A' ) {
+                    if ( $self->{header} eq "Type:Payee" )
+                    {               # The address fields are
+                        $value =    # numbered for this record type
+                          substr( $value, 1 );
+                    }
+                    if ( exists( $object{ $header{ $object{header} }{$field} } )
+                        && $object{ $header{ $object{header} }{$field} } ne "" )
+                    {
+                        $object{ $header{ $object{header} }{$field} } .= "\n";
+                    }
+                    $object{ $header{ $object{header} }{$field} } .= $value;
+                }
+                elsif ($field eq 'S'
+                    && $header{ $object{header} }{$field} eq "category" )
+                {
+                    my %split;
+                    $split{ $header{ $object{header} }{$field} } = $value;
+                    ( $field, $value ) = $self->_parseline( $self->_getline );
+                    $split{ $header{ $object{header} }{$field} } = $value;
+                    ( $field, $value ) = $self->_parseline( $self->_getline );
+                    $split{ $header{ $object{header} }{$field} } = $value;
+                    push( @{ $object{splits} }, \%split );
+                }
+                elsif ($field eq 'B'
+                    && $header{ $object{header} }{$field} eq "amount" )
+                {
+                    push( @{ $object{budget} }, $value );
+                }
+                elsif ( exists( $header{ $object{header} }{$field} ) ) {
+                    $object{ $header{ $object{header} }{$field} } = $value;
+                }
+                else {
+                    $self->_warning( 'Unknown field "' . $field . '"' );
+                }
+            }
+        }
+    }
+    return \%object;
+}
+
+sub _parseline {
+    my $self = shift;
+    my $line = shift;
+    chop($line);
+    my @result;
+    if (   $line !~ /^!/
+        && exists( $self->{header} )
+        && $self->{header} eq "Type:Prices" )
+    {
+        my %price;
+        $line =~ s/\"//g;
+        my @data = split( ",", $line );
+        $result[0]       = $data[0];
+        $price{"close"}  = $data[1];
+        $price{"date"}   = $data[2];
+        $price{"max"}    = $data[3];
+        $price{"min"}    = $data[4];
+        $price{"volume"} = $data[5];
+        $result[1]       = \%price;
+    }
+    else {
+        $result[0] = substr( $line, 0, 1 );
+        $result[1] = substr( $line, 1 );
+    }
+    return @result;
+}
+
+sub _getline {
+    my $self = shift;
+    local $/ = $self->{output_record_separator};
+    my $line = $self->{filehandle}->getline;
+    $self->{linecount}++;
+    return $line;
+}
+
+sub _warning {
+    my $self    = shift;
+    my $message = shift;
+    carp $message
+      . ' in file "'
+      . $self->{file}
+      . '" line '
+      . $self->{linecount};
+}
+
+sub header {
+    my $self = shift;
+    my $header=shift;
+    my $file=$self->{filehandle};
+    local $\ = $self->{output_record_separator};
+    print $file "!".$header;
+
+    # used during write to validate passed record is appropriate for current
+    # header also generate revers lookup for mapping record values to file
+    # key identifier.
+    $self->{currentheader}=$header;
+    foreach my $key (keys %{$header{$header}}) {
+      $self->{reversemap}{$header{$header}{$key}}=$key;
+    }
+
+    $self->{linecount}++;
+    if (!exists($header{$header})) {
+      $self->_warning('Unsuppored header "'.$header.'" writen to file');
+    }
+}
+
+sub write {
+    my $self = shift;
+    my $record = shift;
+    my $file=$self->{filehandle};
+    local $\ = $self->{output_record_separator};
+    foreach my $value (keys %{$record}) {
+      next if ($value eq "header");
+      if (exists($self->{reversemap}{$value})) {
+        print $file $self->{reversemap}{$value}.$record->{$value};
+        $self->{linecount}++;
+      } else {
+        $self->_warning('Unsupported field "'.$value.
+                        '" found in record ignored');
+      }
+    }
+    print $file "^";
+}
+
+sub reset {
+    my $self = shift;
+    $self->{filehandle}->seek( 0, 0 );
+    $self->next;
+}
+
+sub close {
+    my $self = shift;
+    $self->{filehandle}->close();
+}
+
+sub DESTROY {
+    my $self = shift;
+    $self->close();
+}
+
+1;
+__END__
+
+=head1 NAME
+
+Stream::QIF - Perl extension for streaming QIF records from a QIF File.
+
+=head1 SYNOPSIS
+
+  use Stream::QIF;
+  
+  my $qif = Stream::QIF->new(file=>"test.qif");
+  
+  while ( my $record = $qif->next() ) {
+      print "Header: " . $record->{header} . "\n";
+      foreach my $key ( keys %{$record} ) {
+          next
+            if ( $key eq "header"
+              || $key eq "splits"
+              || $key eq "budget"
+              || $key eq "prices" );
+          print "     " . $key . ": " . $record->{$key} . "\n";
+      }
+      if ( exists( $record->{splits} ) ) {
+          foreach my $split ( @{ $record->{splits} } ) {
+              foreach my $key ( keys %{$split} ) {
+                  print "     Split: " . $key . ": " .
+                        $split->{$key} . "\n";
+              }
+          }
+      }
+      if ( exists( $record->{budget} ) ) {
+          print "     Budget: ";
+          foreach my $amount ( @{ $record->{budget} } ) {
+              print " " . $amount;
+          }
+          print "\n";
+      }
+      if ( exists( $record->{prices} ) ) {
+          print "     Date     Close   Max     Min     Volume\n";
+          $format = "     %8s %7.2f %7.2f %7.2f %-8d\n";
+          foreach my $price ( @{ $record->{prices} } ) {
+              printf( $format,
+                  $price->{"date"}, $price->{"close"}, $price->{"max"},
+                  $price->{"min"},  $price->{"volume"} );
+          }
+      }
+  }
+
+=head1 DESCRIPTION
+
+Simple QIF file reader. QIF is a common financial software export file format.
+This module was developed to support Quicken QIF exports. This module streams
+QIF records from a data file passing each succesive record to the caller for
+processing.
+
+A QIF file has a basic format of record type followed by a set of records of
+that type. With in the file you can have multiple sets of these. Some times
+record types may not have any actual records.
+
+A hash reference is returned for each record the hash will have a "header"
+value which containes the record type processed. Along with all supported
+and found values for that record type. If a value is not specified in the
+data file the value will not exist in this hash.
+
+No processing is done on values found in files to try and convert them into
+actual appropriate types. It is expected higher levels or extensions to this
+will do that sort of follow on processing.
+
+=head2 RECORD TYPES & VALUES
+
+The following record types are currently supported by this module:
+
+=over
+
+=item Type:Bank, Type:Cash, Type:CCard, Type:Oth A, Type:Oth L
+
+These are non investment ledger transactions. All of these types support the
+following values.
+
+=over
+
+=item date
+
+Date of transaction.
+
+=item amount
+
+Dollar amount of transaction.
+
+=item status
+
+Reconciliation status of transaction.
+
+=item number
+
+Check number of transaction.
+
+=item payee
+
+Who the transaction was made to.
+
+=item memo
+
+Additional text describing the transaction.
+
+=item address
+
+Address of payee.
+
+=item category
+
+Category the transaction is assigned to.
+
+=item splits
+
+If the transaction contains splits this will be defined and consist of an array
+of hashes. With each split potentially having the following values.
+
+=over
+
+=item category
+
+Category the split is assigned to.
+
+=item memo
+
+Additional text describing the split.
+
+=item amount
+
+Dollar amount of split.
+
+=back
+
+=back
+
+=item Type:Invst
+
+This is for Investment ledger transactions. The following values are supported
+for this record type.
+
+=over
+
+=item date
+
+Date of transaction.
+
+=item action
+
+Type of transaction like buy, sell, ...
+
+=item security
+
+Security name of transaction.
+
+=item price
+
+Price of security at time of transaction.
+
+=item quantity
+
+Number of shares purchased.
+
+=item transaction
+
+Cost of shares in transaction.
+
+=item status
+
+Reconciliation status of transaction.
+
+=item text
+
+Text for non security specific transaction.
+
+=item memo
+
+Additional text describing transaction.
+
+=item commission
+
+Commission fees related to transaction.
+
+=item account
+
+Account related to security specific transaction.
+
+=item amount
+
+Dollar amount of transaction.
+
+=back
+
+=item Account
+
+This is a list of accounts. It is also often used in files by first providing
+one account record followed by a investment or non-investment record type and
+its transactions. Meaning that that set of transactions are related to the
+specified account. In other cases it can just be a sequence of Account records.
+
+Each account record supports the following values.
+
+=over
+
+=item name
+
+Account name.
+
+=item description
+
+Account description.
+
+=item limit
+
+Account limit usually for credit card accounts that have some upper limit
+over credit.
+
+=item tax
+
+Defined if the account is tax related.
+
+=item address
+
+Address associated with the account.
+
+=item type
+
+Type of account.
+
+=item balance
+
+Current balance of account.
+
+=back
+
+=item Type:Cat
+
+This is a list of categories. The following values are supported for categories.
+
+=over
+
+=item name
+
+Name of category.
+
+=item description
+
+Description of category.
+
+=item expense
+
+Usually exists if the category is an expense account however this is often a
+default assumed value and doesn't show up in files.
+
+=item income
+
+Exists if the category is an income account.
+
+=item tax
+
+Exists if this category is tax related.
+
+=item schedule
+
+If this category is tax related this specifies what tax schedule it is related
+if defiend.
+
+=back
+
+=item Type:Class
+
+This is a list of classes. The following values are supported for classes.
+
+=over
+
+=item name
+
+Name of class.
+
+=item description
+
+Description of class.
+
+=back
+
+=item Type:Memorized
+
+This is a list of memorized transactions. The following values are supported
+for memorized transactions.
+
+=over
+
+=item transaction
+
+Type of memorizied transaction "C" for check, "D" for deposit, "P" for payment,
+"I" for invetment, and "E" for electronic payee.
+
+=item amount
+
+Dollar amount of transaction.
+
+=item status
+
+Reconciliation status of transaction.
+
+=item payee
+
+Who the transaction was made to.
+
+=item memo
+
+Additional text describing the transaction.
+
+=item address
+
+Address of payee.
+
+=item category
+
+Category the transaction is assigned to.
+
+=item splits
+
+If the transaction contains splits this will be defined and consist of an array of hashes. With each split potentially having the following values.
+
+=over 
+
+=item category
+
+Category the split is assigned to.
+
+=item memo
+
+Additional text describing the split.
+
+=item amount
+
+Dollar amount of split.
+
+=back
+
+=item first
+
+First payment date.
+
+=item years
+
+Total years for loan.
+
+=item made
+
+Number of payments already made.
+
+=item periods
+
+Number of periods per year.
+
+=item interest
+
+Interest rate of loan.
+
+=item balance
+
+Current loan balance.
+
+=item loan
+
+Original loan amount.
+
+=back
+
+=item Type:Security
+
+This is a list of securities. The following values are supported for securiteis.
+
+=over
+
+=item security
+
+Security name.
+
+=item symbol
+
+Security symbol.
+
+=item type
+
+Security type.
+
+=item goal
+
+Security goal.
+
+=back
+
+=item Type:Budget
+
+This is a list of buget values for categories. The following values are supported for buget lists.
+
+=over
+
+=item name
+
+Category name of budgeted item.
+
+=item description
+
+Category Description of budgeted item.
+
+=item expense
+
+Usually exists if the category is an expense account however this is often a
+default assumed value and doesn't show up in files.
+
+=item income
+
+Exists if the category is an income account.
+
+=item tax
+
+Exists if this category is tax related.
+
+=item schedule
+
+If this category is tax related this specifies what tax schedule it is related
+if defiend.
+
+=item amount
+
+An array of 12 values Jan-Dec to represent the budget amount for each month.
+
+=back
+
+=item Type:Payee
+
+This is a list online payee accounts. The following values are supported for online payee accounts.
+
+Note: A commen field for this type is identified by a "Y" however so far I have
+been unable to determine what that field represents. As a result this software
+currently doesn't support it and will raise a warning when ever it is found.
+
+=over
+
+=item name
+
+Name of payees.
+
+=item address
+
+Address of payee.
+
+=item city
+
+City of payee.
+
+=item state
+
+State of payee
+
+=item zip
+
+Zipcode of payee.
+
+=item phone
+
+Phone number of payee.
+
+=item account
+
+Account number for payee transaction.
+
+=back
+
+=item Type:Prices
+
+This is a list of prices for a security. The following values are supported for security prices.
+
+=over
+
+=item symbol
+
+Security Symbol.
+
+=item prices
+
+An array of hashes. With each hash having the following values.
+
+=over
+
+=item date
+
+Date of security values.
+
+=item close
+
+Close value of security for the date.
+
+=item max
+
+Max value of security for the date.
+
+=item min
+
+Min value of security for the date.
+
+=item volume
+
+Number of shares of security exchanged for the date.
+
+=back
+
+=back
+
+=item Option:AllXfr, Option:AutoSwitch, Clear:AutoSwitch
+
+These record types aren't really records but instead ways used to control how
+Quicken processes the QIF file. They have no impact on how this software
+operates and are ignored when found.
+
+=back
+
+Note: If this software finds unsupported record types or values in the data
+file a warning will be generated on what unexpected value was found.
+
+=head1 METHODS
+
+=over
+
+=item new()
+
+Creates a new instance of Finance::QIF. Supports the following inializing
+values.
+
+  my $qif=Stream::QIF->new(file=>"myfile",debug=>1);
+
+If the file is specified it will be opened on new.
+
+=over
+
+=item file
+
+  Specifies file to use for processing.
+
+  my $qif=Stream::QIF->new(file=>"myfile");
+
+  For output files must include ">" with file name.
+
+  my $qif=Stream::QIF->new(file=>">myfile");
+
+=item output_record_separator
+
+  Can be used to redefine the QIF output record separator. Default is "\r".
+
+  my $qif=Stream::QIF->new(output_record_separator=>"\n");
+
+=item input_record_separator
+
+  Can be used to redefine the QIF input record separator. Default is "\r".
+
+  my $qif=Stream::QIF->new(input_record_separator=>"\n");
+
+=item debug
+
+  Can be used to output debug information. Default is "0".
+
+  my $qif=Stream::QIF->new(debug=>1);
+
+=back
+
+=item file()
+
+Specify file name to use. For output files must include "<" with name.
+
+  $qif->file("myfile");
+
+=item open()
+
+Open already specified file.
+
+  $qif->open();
+
+Opens sepecified file.
+
+  $qif->open("myfile");
+
+=item next()
+
+For input files return the next record in the QIF file.
+
+  my $record=$qif->next();
+
+Returns null if no more records are available.
+
+=item header()
+
+For output files use to output the passed header for records that will then
+be writen with write.
+
+<list supported headers>
+
+=item write()
+
+For output file us to output the passed record to the file.
+
+=item reset()
+
+Resets the stream so the records can be read again from the begining of the
+file.
+
+  $qif->reset();
+
+=item close()
+
+Closes the open file.
+
+  $qif->close();
+
+=back
+
+=head1 TODO
+
+Type:Payee is not complete need real exports from quicken that use this
+feature.
+
+=head1 SEE ALSO
+
+Carp, IO::File
+
+Quicken Interchange Format (QIF) specification
+http://web.intuit.com/support/quicken/docs/d_qif.html
+
+Finance::QIF is very similar to Stream::QIF main differences are Stream::QIF
+supports most QIF record types but only for reading. Stream::QIF module does
+not load the entire QIF file into memory but only one record at a time.
+Finance::QIF supports writing "Type:Bank" records.
+
+=head1 AUTHOR
+
+Matthew McGillis <matthew@mcgiliis.org> http://www.mcgillis.org/
+Phil Lobbes <phil@perkpartners.com>
+
+=head1 COPYRIGHT
+
+Copyright (C) 2006 by Matthew McGillis. All rights reserved. This library is
+free software; you can redistribute it and/or modify it under the same terms
+as Perl itself.
+
+=cut
