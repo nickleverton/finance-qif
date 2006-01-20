@@ -1,6 +1,13 @@
 Changes
+lib/Finance/QIF.pm
 Makefile.PL
 MANIFEST
+MANIFEST.PL
 README
-t/Stream-QIF.t
-lib/Stream/QIF.pm
+t/Finance-QIF.t
+t/mycat
+t/qifdumper
+t/readwrite
+t/simple.qif
+t/test.qif
+t/uncat
