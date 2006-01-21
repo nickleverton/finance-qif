@@ -1,6 +1,5 @@
 package Finance::QIF;
 
-use 5.008006;
 use strict;
 use warnings;
 
@@ -134,40 +133,42 @@ my %header = (
 sub new {
     my $class = shift;
     my $self  = {@_};
-    $self->{file} ||="";
+    $self->{file}                    ||= "";
     $self->{output_record_separator} ||= "\r";
-    $self->{input_record_separator} ||="\r";
-    $self->{debug} ||=0;
+    $self->{input_record_separator}  ||= "\r";
+    $self->{debug}                   ||= 0;
     $self->{linecount} = 0;
     bless( $self, $class );
-    print "File name: " . $self->{file} . "\n" if $self->{debug};
-    if ($self->{file}) {
-      $self->open();
+    print( "File name: ", $self->{file}, "\n" ) if ( $self->{debug} );
+
+    if ( $self->{file} ) {
+        $self->open();
     }
     return $self;
 }
 
 sub file {
-  my $self=shift;
-  if ($_[0]) {
-     $self->{file}=shift; 
-  }
-  return $self->{file};
+    my $self = shift;
+    if ( $_[0] ) {
+        $self->{file} = shift;
+    }
+    return $self->{file};
 }
 
 sub open {
-  my $self=shift;
-  if ($_[0]) {
-     file(shift); 
-  }
-  if ( $self->{file} ) {
-      $self->{filehandle} = new IO::File $self->{file};
-      if ( !defined( $self->{filehandle} ) ) {
-         croak 'Failed to open file "'.$self->{file} ."\".";
-      }
-  } else {
-    croak "No file specified.";
-  }
+    my $self = shift;
+    if ( $_[0] ) {
+        file(shift);
+    }
+    if ( $self->{file} ) {
+        $self->{filehandle} = new IO::File $self->{file};
+        if ( !defined( $self->{filehandle} ) ) {
+            croak 'Failed to open file "' . $self->{file} . "\".";
+        }
+    }
+    else {
+        croak "No file specified.";
+    }
 }
 
 sub next {
@@ -205,7 +206,7 @@ sub next {
                 }
                 elsif ( $field eq 'A' ) {
                     if ( $self->{header} eq "Type:Payee" )
-                    {               # The address fields are
+                    {    # The address fields are
                         $value =    # numbered for this record type
                           substr( $value, 1 );
                     }
@@ -290,42 +291,43 @@ sub _warning {
 }
 
 sub header {
-    my $self = shift;
-    my $header=shift;
-    my $file=$self->{filehandle};
+    my $self   = shift;
+    my $header = shift;
+    my $file   = $self->{filehandle};
     local $\ = $self->{output_record_separator};
-    print $file "!".$header;
+    print( $file "!", $header );
 
     # used during write to validate passed record is appropriate for current
     # header also generate revers lookup for mapping record values to file
     # key identifier.
-    $self->{currentheader}=$header;
-    foreach my $key (keys %{$header{$header}}) {
-      $self->{reversemap}{$header{$header}{$key}}=$key;
+    $self->{currentheader} = $header;
+    foreach my $key ( keys %{ $header{$header} } ) {
+        $self->{reversemap}{ $header{$header}{$key} } = $key;
     }
 
     $self->{linecount}++;
-    if (!exists($header{$header})) {
-      $self->_warning('Unsuppored header "'.$header.'" writen to file');
+    if ( !exists( $header{$header} ) ) {
+        $self->_warning( 'Unsuppored header "' . $header . '" writen to file' );
     }
 }
 
 sub write {
-    my $self = shift;
+    my $self   = shift;
     my $record = shift;
-    my $file=$self->{filehandle};
+    my $file   = $self->{filehandle};
     local $\ = $self->{output_record_separator};
-    foreach my $value (keys %{$record}) {
-      next if ($value eq "header");
-      if (exists($self->{reversemap}{$value})) {
-        print $file $self->{reversemap}{$value}.$record->{$value};
-        $self->{linecount}++;
-      } else {
-        $self->_warning('Unsupported field "'.$value.
-                        '" found in record ignored');
-      }
+    foreach my $value ( keys %{$record} ) {
+        next if ( $value eq "header" );
+        if ( exists( $self->{reversemap}{$value} ) ) {
+            print( $file $self->{reversemap}{$value}, $record->{$value} );
+            $self->{linecount}++;
+        }
+        else {
+            $self->_warning(
+                'Unsupported field "' . $value . '" found in record ignored' );
+        }
     }
-    print $file "^";
+    print( $file "^" );
 }
 
 sub reset {
@@ -349,41 +351,40 @@ __END__
 
 =head1 NAME
 
-Stream::QIF - Perl extension for streaming QIF records from a QIF File.
+Finance::QIF - Parse and create Quicken Interchange Format files
 
 =head1 SYNOPSIS
 
-  use Stream::QIF;
-  
-  my $qif = Stream::QIF->new(file=>"test.qif");
-  
+  use Finance::QIF;
+
+  my $qif = Finance::QIF->new( file => "test.qif" );
+
   while ( my $record = $qif->next() ) {
-      print "Header: " . $record->{header} . "\n";
+      print( "Header: ", $record->{header}, "\n" );
       foreach my $key ( keys %{$record} ) {
           next
             if ( $key eq "header"
               || $key eq "splits"
               || $key eq "budget"
               || $key eq "prices" );
-          print "     " . $key . ": " . $record->{$key} . "\n";
+          print( "     ", $key, ": ", $record->{$key}, "\n" );
       }
       if ( exists( $record->{splits} ) ) {
           foreach my $split ( @{ $record->{splits} } ) {
               foreach my $key ( keys %{$split} ) {
-                  print "     Split: " . $key . ": " .
-                        $split->{$key} . "\n";
+                  print( "     Split: ", $key, ": ", $split->{$key}, "\n" );
               }
           }
       }
       if ( exists( $record->{budget} ) ) {
-          print "     Budget: ";
+          print("     Budget: ");
           foreach my $amount ( @{ $record->{budget} } ) {
-              print " " . $amount;
+              print( " ", $amount );
           }
-          print "\n";
+          print("\n");
       }
       if ( exists( $record->{prices} ) ) {
-          print "     Date     Close   Max     Min     Volume\n";
+          print("     Date     Close   Max     Min     Volume\n");
           $format = "     %8s %7.2f %7.2f %7.2f %-8d\n";
           foreach my $price ( @{ $record->{prices} } ) {
               printf( $format,
@@ -395,23 +396,23 @@ Stream::QIF - Perl extension for streaming QIF records from a QIF File.
 
 =head1 DESCRIPTION
 
-Simple QIF file reader. QIF is a common financial software export file format.
-This module was developed to support Quicken QIF exports. This module streams
-QIF records from a data file passing each succesive record to the caller for
-processing.
+Simple QIF file reader. QIF is a common financial software export file
+format.  This module was developed to support Quicken QIF
+exports. This module reads QIF records from a data file passing each
+successive record to the caller for processing.
 
-A QIF file has a basic format of record type followed by a set of records of
-that type. With in the file you can have multiple sets of these. Some times
-record types may not have any actual records.
+A QIF file has a basic format of record type followed by a set of
+records of that type. With in the file you can have multiple sets of
+these. Some times record types may not have any actual records.
 
-A hash reference is returned for each record the hash will have a "header"
-value which containes the record type processed. Along with all supported
-and found values for that record type. If a value is not specified in the
-data file the value will not exist in this hash.
+A hash reference is returned for each record the hash will have a
+"header" value which contains the record type processed. Along with
+all supported and found values for that record type. If a value is not
+specified in the data file the value will not exist in this hash.
 
-No processing is done on values found in files to try and convert them into
-actual appropriate types. It is expected higher levels or extensions to this
-will do that sort of follow on processing.
+No processing is done on values found in files to try and convert them
+into actual appropriate types. It is expected higher levels or
+extensions to this will do that sort of follow on processing.
 
 =head2 RECORD TYPES & VALUES
 
@@ -421,8 +422,8 @@ The following record types are currently supported by this module:
 
 =item Type:Bank, Type:Cash, Type:CCard, Type:Oth A, Type:Oth L
 
-These are non investment ledger transactions. All of these types support the
-following values.
+These are non investment ledger transactions. All of these types
+support the following values.
 
 =over
 
@@ -460,8 +461,9 @@ Category the transaction is assigned to.
 
 =item splits
 
-If the transaction contains splits this will be defined and consist of an array
-of hashes. With each split potentially having the following values.
+If the transaction contains splits this will be defined and consist of
+an array of hashes. With each split potentially having the following
+values.
 
 =over
 
@@ -483,8 +485,8 @@ Dollar amount of split.
 
 =item Type:Invst
 
-This is for Investment ledger transactions. The following values are supported
-for this record type.
+This is for Investment ledger transactions. The following values are
+supported for this record type.
 
 =over
 
@@ -540,10 +542,11 @@ Dollar amount of transaction.
 
 =item Account
 
-This is a list of accounts. It is also often used in files by first providing
-one account record followed by a investment or non-investment record type and
-its transactions. Meaning that that set of transactions are related to the
-specified account. In other cases it can just be a sequence of Account records.
+This is a list of accounts. It is also often used in files by first
+providing one account record followed by a investment or
+non-investment record type and its transactions. Meaning that that set
+of transactions are related to the specified account. In other cases
+it can just be a sequence of Account records.
 
 Each account record supports the following values.
 
@@ -559,8 +562,8 @@ Account description.
 
 =item limit
 
-Account limit usually for credit card accounts that have some upper limit
-over credit.
+Account limit usually for credit card accounts that have some upper
+limit over credit.
 
 =item tax
 
@@ -582,7 +585,8 @@ Current balance of account.
 
 =item Type:Cat
 
-This is a list of categories. The following values are supported for categories.
+This is a list of categories. The following values are supported for
+categories.
 
 =over
 
@@ -596,8 +600,8 @@ Description of category.
 
 =item expense
 
-Usually exists if the category is an expense account however this is often a
-default assumed value and doesn't show up in files.
+Usually exists if the category is an expense account however this is
+often a default assumed value and doesn't show up in files.
 
 =item income
 
@@ -609,14 +613,15 @@ Exists if this category is tax related.
 
 =item schedule
 
-If this category is tax related this specifies what tax schedule it is related
-if defiend.
+If this category is tax related this specifies what tax schedule it is
+related if defined.
 
 =back
 
 =item Type:Class
 
-This is a list of classes. The following values are supported for classes.
+This is a list of classes. The following values are supported for
+classes.
 
 =over
 
@@ -632,15 +637,15 @@ Description of class.
 
 =item Type:Memorized
 
-This is a list of memorized transactions. The following values are supported
-for memorized transactions.
+This is a list of memorized transactions. The following values are
+supported for memorized transactions.
 
 =over
 
 =item transaction
 
-Type of memorizied transaction "C" for check, "D" for deposit, "P" for payment,
-"I" for invetment, and "E" for electronic payee.
+Type of memorized transaction "C" for check, "D" for deposit, "P" for
+payment, "I" for investment, and "E" for electronic payee.
 
 =item amount
 
@@ -668,9 +673,11 @@ Category the transaction is assigned to.
 
 =item splits
 
-If the transaction contains splits this will be defined and consist of an array of hashes. With each split potentially having the following values.
+If the transaction contains splits this will be defined and consist of
+an array of hashes. With each split potentially having the following
+values.
 
-=over 
+=over
 
 =item category
 
@@ -718,7 +725,8 @@ Original loan amount.
 
 =item Type:Security
 
-This is a list of securities. The following values are supported for securiteis.
+This is a list of securities. The following values are supported for
+securities.
 
 =over
 
@@ -742,7 +750,8 @@ Security goal.
 
 =item Type:Budget
 
-This is a list of buget values for categories. The following values are supported for buget lists.
+This is a list of budget values for categories. The following values
+are supported for budget lists.
 
 =over
 
@@ -756,8 +765,8 @@ Category Description of budgeted item.
 
 =item expense
 
-Usually exists if the category is an expense account however this is often a
-default assumed value and doesn't show up in files.
+Usually exists if the category is an expense account however this is
+often a default assumed value and doesn't show up in files.
 
 =item income
 
@@ -769,22 +778,25 @@ Exists if this category is tax related.
 
 =item schedule
 
-If this category is tax related this specifies what tax schedule it is related
-if defiend.
+If this category is tax related this specifies what tax schedule it is
+related if defined.
 
 =item amount
 
-An array of 12 values Jan-Dec to represent the budget amount for each month.
+An array of 12 values Jan-Dec to represent the budget amount for each
+month.
 
 =back
 
 =item Type:Payee
 
-This is a list online payee accounts. The following values are supported for online payee accounts.
+This is a list online payee accounts. The following values are
+supported for online payee accounts.
 
-Note: A commen field for this type is identified by a "Y" however so far I have
-been unable to determine what that field represents. As a result this software
-currently doesn't support it and will raise a warning when ever it is found.
+Note: A common field for this type is identified by a "Y" however so
+far I have been unable to determine what that field represents. As a
+result this software currently doesn't support it and will raise a
+warning when ever it is found.
 
 =over
 
@@ -820,7 +832,8 @@ Account number for payee transaction.
 
 =item Type:Prices
 
-This is a list of prices for a security. The following values are supported for security prices.
+This is a list of prices for a security. The following values are
+supported for security prices.
 
 =over
 
@@ -860,14 +873,15 @@ Number of shares of security exchanged for the date.
 
 =item Option:AllXfr, Option:AutoSwitch, Clear:AutoSwitch
 
-These record types aren't really records but instead ways used to control how
-Quicken processes the QIF file. They have no impact on how this software
-operates and are ignored when found.
+These record types aren't really records but instead ways used to
+control how Quicken processes the QIF file. They have no impact on how
+this software operates and are ignored when found.
 
 =back
 
-Note: If this software finds unsupported record types or values in the data
-file a warning will be generated on what unexpected value was found.
+Note: If this software finds unsupported record types or values in the
+data file a warning will be generated on what unexpected value was
+found.
 
 =head1 METHODS
 
@@ -875,10 +889,10 @@ file a warning will be generated on what unexpected value was found.
 
 =item new()
 
-Creates a new instance of Finance::QIF. Supports the following inializing
-values.
+Creates a new instance of Finance::QIF. Supports the following
+initializing values.
 
-  my $qif=Stream::QIF->new(file=>"myfile",debug=>1);
+  my $qif = Finance::QIF->new( file => "myfile", debug => 1 );
 
 If the file is specified it will be opened on new.
 
@@ -886,31 +900,33 @@ If the file is specified it will be opened on new.
 
 =item file
 
-  Specifies file to use for processing.
+Specifies file to use for processing.
 
-  my $qif=Stream::QIF->new(file=>"myfile");
+  my $qif = Finance::QIF->new( file => "myfile" );
 
-  For output files must include ">" with file name.
+For output files must include ">" with file name.
 
-  my $qif=Stream::QIF->new(file=>">myfile");
+  my $qif = Finance::QIF->new( file => ">myfile" );
 
 =item output_record_separator
 
-  Can be used to redefine the QIF output record separator. Default is "\r".
+Can be used to redefine the QIF output record separator. Default is
+"\r".
 
-  my $qif=Stream::QIF->new(output_record_separator=>"\n");
+  my $qif = Finance::QIF->new( output_record_separator => "\n" );
 
 =item input_record_separator
 
-  Can be used to redefine the QIF input record separator. Default is "\r".
+Can be used to redefine the QIF input record separator. Default is
+"\r".
 
-  my $qif=Stream::QIF->new(input_record_separator=>"\n");
+  my $qif = Finance::QIF->new( input_record_separator => "\n" );
 
 =item debug
 
-  Can be used to output debug information. Default is "0".
+Can be used to output debug information. Default is "0".
 
-  my $qif=Stream::QIF->new(debug=>1);
+  my $qif = Finance::QIF->new( debug => 1 );
 
 =back
 
@@ -926,7 +942,7 @@ Open already specified file.
 
   $qif->open();
 
-Opens sepecified file.
+Opens specified file.
 
   $qif->open("myfile");
 
@@ -934,14 +950,14 @@ Opens sepecified file.
 
 For input files return the next record in the QIF file.
 
-  my $record=$qif->next();
+  my $record = $qif->next();
 
 Returns null if no more records are available.
 
 =item header()
 
-For output files use to output the passed header for records that will then
-be writen with write.
+For output files use to output the passed header for records that will
+then be written with write.
 
 <list supported headers>
 
@@ -951,8 +967,8 @@ For output file us to output the passed record to the file.
 
 =item reset()
 
-Resets the stream so the records can be read again from the begining of the
-file.
+Resets the filehandle so the records can be read again from the
+beginning of the file.
 
   $qif->reset();
 
@@ -966,8 +982,8 @@ Closes the open file.
 
 =head1 TODO
 
-Type:Payee is not complete need real exports from quicken that use this
-feature.
+Type:Payee is not complete need real exports from quicken that use
+this feature.
 
 =head1 SEE ALSO
 
@@ -976,20 +992,15 @@ Carp, IO::File
 Quicken Interchange Format (QIF) specification
 http://web.intuit.com/support/quicken/docs/d_qif.html
 
-Finance::QIF is very similar to Stream::QIF main differences are Stream::QIF
-supports most QIF record types but only for reading. Stream::QIF module does
-not load the entire QIF file into memory but only one record at a time.
-Finance::QIF supports writing "Type:Bank" records.
-
 =head1 AUTHOR
 
-Matthew McGillis <matthew@mcgiliis.org> http://www.mcgillis.org/
+Matthew McGillis <matthew@mcgillis.org> http://www.mcgillis.org/
 Phil Lobbes <phil@perkpartners.com>
 
 =head1 COPYRIGHT
 
-Copyright (C) 2006 by Matthew McGillis. All rights reserved. This library is
-free software; you can redistribute it and/or modify it under the same terms
-as Perl itself.
+Copyright (C) 2006 by Matthew McGillis. All rights reserved. This
+library is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
 
 =cut
