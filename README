@@ -1,10 +1,10 @@
-Stream-QIF version 0.01
+Finance-QIF version 0.01
 =======================
 
-Simple QIF file reader. QIF is a common financial software export file format.
-This module was developed to support Quicken QIF exports. This module streams
-QIF records from a data file passing each succesive record to the caller for
-processing.
+Simple QIF file reader. QIF is a common financial software export file
+format.  This module was developed to support Quicken QIF exports.
+This module reads QIF records from a data file passing each successive
+record to the caller for processing.
 
 INSTALLATION
 
@@ -21,7 +21,7 @@ This module requires these other modules and libraries:
 
   Carp, IO::File
 
-COPYRIGHT AND LICENCE
+COPYRIGHT AND LICENSE
 
 Copyright (C) 2006 by Matthew McGillis
 
