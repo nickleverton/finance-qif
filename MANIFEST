@@ -2,7 +2,6 @@ Changes
 lib/Finance/QIF.pm
 Makefile.PL
 MANIFEST
-MANIFEST.PL
 README
 t/Finance-QIF.t
 t/mycat
