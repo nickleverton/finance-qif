@@ -1,6 +1,6 @@
 use Finance::QIF;
 
-my $in=Finance::QIF->new(file=>"simple.qif");
+my $in=Finance::QIF->new(file=>$ARGV[0]);
 my $out=Finance::QIF->new(file=>">write.qif");
 
 my $header="";

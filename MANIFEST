@@ -7,6 +7,5 @@ t/Finance-QIF.t
 t/mycat
 t/qifdumper
 t/readwrite
-t/simple.qif
 t/test.qif
 t/uncat

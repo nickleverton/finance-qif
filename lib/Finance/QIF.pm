@@ -17,6 +17,10 @@ my %noninvestment = (
     "M" => "memo",
     "A" => "address",
     "L" => "category",
+    "S" => "splits"
+);
+
+my %split = (
     "S" => "category",
     "E" => "memo",
     '$' => "amount"
@@ -42,7 +46,7 @@ my %account = (
     "D" => "description",
     "L" => "limit",
     "X" => "tax",
-    "A" => "address",
+    "A" => "note",
     "T" => "type",
     'B' => "balance"
 );
@@ -69,9 +73,7 @@ my %memorized = (
     "M" => "memo",
     "A" => "address",
     "L" => "category",
-    "S" => "category",
-    "E" => "memo",
-    '$' => "amount",
+    "S" => "splits",
     "1" => "first",
     "2" => "years",
     "3" => "made",
@@ -95,7 +97,7 @@ my %budget = (
     "I" => "income",
     "T" => "tax",
     "R" => "schedule",
-    "B" => "amount"
+    "B" => "budget"
 );
 
 my %payee = (
@@ -106,6 +108,19 @@ my %payee = (
     "Z" => "zip",
     "N" => "phone",
     "#" => "account"
+);
+
+my %prices = (
+    "S" => "symbol",
+    "P" => "price",
+);
+
+my %price = (
+    "C" => "close",
+    "D" => "date",
+    "X" => "max",
+    "I" => "min",
+    "V" => "volume"
 );
 
 my %nofields = ();
@@ -124,7 +139,7 @@ my %header = (
     "Type:Security"     => \%security,
     "Type:Budget"       => \%budget,
     "Type:Payee"        => \%payee,
-    "Type:Prices"       => "",
+    "Type:Prices"       => \%prices,
     "Option:AutoSwitch" => \%nofields,
     "Option:AllXfr"     => \%nofields,
     "Clear:AutoSwitch"  => \%nofields
@@ -204,11 +219,19 @@ sub next {
                     $object{"symbol"} = $field;
                     push( @{ $object{"prices"} }, $value );
                 }
-                elsif ( $field eq 'A' ) {
-                    if ( $self->{header} eq "Type:Payee" )
-                    {    # The address fields are
-                        $value =    # numbered for this record type
-                          substr( $value, 1 );
+                elsif ($field eq 'A'
+                    && $header{ $object{header} }{$field} eq "address" )
+                {
+                    if ( $self->{header} eq "Type:Payee" ) {
+
+                        # The address fields are numbered for this record type
+                        if ( length($value) == 0 ) {
+                            $self->_warning( 'Improper address record for '
+                                  . 'this record type' );
+                        }
+                        else {
+                            $value = substr( $value, 1 );
+                        }
                     }
                     if ( exists( $object{ $header{ $object{header} }{$field} } )
                         && $object{ $header{ $object{header} }{$field} } ne "" )
@@ -218,18 +241,18 @@ sub next {
                     $object{ $header{ $object{header} }{$field} } .= $value;
                 }
                 elsif ($field eq 'S'
-                    && $header{ $object{header} }{$field} eq "category" )
+                    && $header{ $object{header} }{$field} eq "splits" )
                 {
-                    my %split;
-                    $split{ $header{ $object{header} }{$field} } = $value;
+                    my %mys;
+                    $mys{ $split{$field} } = $value;
                     ( $field, $value ) = $self->_parseline( $self->_getline );
-                    $split{ $header{ $object{header} }{$field} } = $value;
+                    $mys{ $split{$field} } = $value;
                     ( $field, $value ) = $self->_parseline( $self->_getline );
-                    $split{ $header{ $object{header} }{$field} } = $value;
-                    push( @{ $object{splits} }, \%split );
+                    $mys{ $split{$field} } = $value;
+                    push( @{ $object{splits} }, \%mys );
                 }
                 elsif ($field eq 'B'
-                    && $header{ $object{header} }{$field} eq "amount" )
+                    && $header{ $object{header} }{$field} eq "budget" )
                 {
                     push( @{ $object{budget} }, $value );
                 }
@@ -304,6 +327,11 @@ sub header {
     foreach my $key ( keys %{ $header{$header} } ) {
         $self->{reversemap}{ $header{$header}{$key} } = $key;
     }
+    if ( exists( $header{$header}{S} ) && $header{$header}{S} eq "splits" ) {
+        foreach my $key ( keys %split ) {
+            $self->{reversesplitsmap}{ $split{$key} } = $key;
+        }
+    }
 
     $self->{linecount}++;
     if ( !exists( $header{$header} ) ) {
@@ -314,20 +342,126 @@ sub header {
 sub write {
     my $self   = shift;
     my $record = shift;
-    my $file   = $self->{filehandle};
-    local $\ = $self->{output_record_separator};
-    foreach my $value ( keys %{$record} ) {
-        next if ( $value eq "header" );
-        if ( exists( $self->{reversemap}{$value} ) ) {
-            print( $file $self->{reversemap}{$value}, $record->{$value} );
-            $self->{linecount}++;
+    if ( $record->{header} eq $self->{currentheader} ) {
+        if ( $record->{header} eq "Type:Prices" ) {
+            if ( exists( $record->{symbol} ) && exists( $record->{prices} ) ) {
+                foreach my $price ( @{ $record->{prices} } ) {
+                    if (   exists( $price->{close} )
+                        && exists( $price->{date} )
+                        && exists( $price->{max} )
+                        && exists( $price->{min} )
+                        && exists( $price->{volume} ) )
+                    {
+                        $self->_writeline(
+                            join( ",",
+                                '"' . $record->{symbol} . '"',
+                                $price->{close},
+                                '"' . $price->{date} . '"',
+                                $price->{max},
+                                $price->{min},
+                                $price->{volume} )
+                        );
+                    }
+                    else {
+                        $self->_warning('Prices missing a required field');
+                    }
+                }
+                $self->_writeline("^");
+            }
+            else {
+                $self->_warning('Record missing "symbol" or "prices"');
+            }
         }
         else {
-            $self->_warning(
-                'Unsupported field "' . $value . '" found in record ignored' );
+            foreach my $value ( keys %{$record} ) {
+                next
+                  if (
+                       $value eq "header"
+                    || $value eq "splits"
+                    || (   $self->{currentheader} eq "Type:Memorized"
+                        && $value eq "transaction" )
+                  );
+                if ( exists( $self->{reversemap}{$value} ) ) {
+                    if ( $value eq "address" ) {
+                        my @lines = split( "\n", $record->{$value} );
+                        if ( $self->{currentheader} eq "Type:Payee" ) {
+
+                          # The address fields are numbered for this record type
+                            for ( my $count = 1 ; $count < 3 ; $count++ ) {
+                                if ( $count <= $#lines ) {
+                                    $self->_writeline( "A", $count,
+                                        $lines[ $count - 1 ] );
+                                }
+                                else {
+                                    $self->_writeline( "A", $count );
+                                }
+                            }
+                        }
+                        else {
+                            for ( my $count = 0 ; $count < 6 ; $count++ ) {
+                                if ( $count <= $#lines ) {
+                                    $self->_writeline( "A", $lines[$count] );
+                                }
+                                else {
+                                    $self->_writeline("A");
+                                }
+                            }
+                        }
+                    }
+                    elsif ( $value eq "budget" ) {
+                        foreach my $amount ( @{ $record->{$value} } ) {
+                            $self->_writeline( $self->{reversemap}{$value},
+                                $amount );
+                        }
+                    }
+                    else {
+                        $self->_writeline( $self->{reversemap}{$value},
+                            $record->{$value} );
+                    }
+                }
+                else {
+                    $self->_warning( 'Unsupported field "' . $value
+                          . '" found in record ignored' );
+                }
+            }
+            if ( exists( $record->{splits} ) ) {
+                foreach my $s ( @{ $record->{splits} } ) {
+                    foreach my $key ( 'category', 'memo', 'amount' ) {
+                        if ( exists( $s->{$key} ) ) {
+                            $self->_writeline( $self->{reversesplitsmap}{$key},
+                                $s->{$key} );
+                        }
+                        else {
+                            $self->_writeline(
+                                $self->{reversesplitsmap}{$key} );
+                        }
+                    }
+                }
+            }
+            if ( $self->{currentheader} eq "Type:Memorized"
+                && exists( $record->{transaction} ) )
+            {
+                $self->_writeline( $self->{reversemap}{"transaction"},
+                    $record->{"transaction"} );
+            }
+            $self->_writeline("^");
         }
     }
-    print( $file "^" );
+    else {
+        $self->_warning( 'Record header type "'
+              . $record->{header}
+              . '" does not match current output header type '
+              . $self->{currentheader}
+              . '.' );
+    }
+}
+
+sub _writeline {
+    my $self = shift;
+    my $file = $self->{filehandle};
+    local $\ = $self->{output_record_separator};
+    print $file @_;
+    $self->{linecount}++;
 }
 
 sub reset {
@@ -932,7 +1066,7 @@ Can be used to output debug information. Default is "0".
 
 =item file()
 
-Specify file name to use. For output files must include "<" with name.
+Specify file name to use. For output files must include ">" with name.
 
   $qif->file("myfile");
 
