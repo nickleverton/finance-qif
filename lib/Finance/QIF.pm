@@ -1,12 +1,12 @@
 package Finance::QIF;
 
+use 5.006;
 use strict;
 use warnings;
-
-our $VERSION = '0.01';
-
 use Carp;
 use IO::File;
+
+our $VERSION = '0.01';
 
 my %noninvestment = (
     "D" => "date",
@@ -481,6 +481,7 @@ sub DESTROY {
 }
 
 1;
+
 __END__
 
 =head1 NAME
@@ -530,23 +531,25 @@ Finance::QIF - Parse and create Quicken Interchange Format files
 
 =head1 DESCRIPTION
 
-Simple QIF file reader. QIF is a common financial software export file
-format.  This module was developed to support Quicken QIF
-exports. This module reads QIF records from a data file passing each
-successive record to the caller for processing.
+Finance::QIF is a module for working with QIF (Quicken Interchange
+Format) files in Perl.  This module reads QIF transactions from a data
+file passing each successive transaction to the caller for processing.
+This module also has the capability of writing QIF transactions to a
+file.
 
 A QIF file has a basic format of record type followed by a set of
-records of that type. With in the file you can have multiple sets of
-these. Some times record types may not have any actual records.
+records of that type.  Within the file there can be multiple sets of
+these.  Sometimes record types may not have any actual data.
 
-A hash reference is returned for each record the hash will have a
-"header" value which contains the record type processed. Along with
-all supported and found values for that record type. If a value is not
-specified in the data file the value will not exist in this hash.
+A hash reference is returned for each record.  The hash will have a
+"header" value which contains the record type processed along with all
+supported and found values for that record type.  If a value is not
+specified in the data file, the value will not exist in this hash.
 
-No processing is done on values found in files to try and convert them
-into actual appropriate types. It is expected higher levels or
-extensions to this will do that sort of follow on processing.
+No processing or validation is done on values found in files or data
+structures to try and convert them into appropriate types and formats.
+It is expected that users of this module or extensions to this module
+will do any additional processing or validation as required.
 
 =head2 RECORD TYPES & VALUES
 
@@ -556,7 +559,7 @@ The following record types are currently supported by this module:
 
 =item Type:Bank, Type:Cash, Type:CCard, Type:Oth A, Type:Oth L
 
-These are non investment ledger transactions. All of these types
+These are non investment ledger transactions.  All of these types
 support the following values.
 
 =over
@@ -596,7 +599,7 @@ Category the transaction is assigned to.
 =item splits
 
 If the transaction contains splits this will be defined and consist of
-an array of hashes. With each split potentially having the following
+an array of hashes.  With each split potentially having the following
 values.
 
 =over
@@ -619,7 +622,7 @@ Dollar amount of split.
 
 =item Type:Invst
 
-This is for Investment ledger transactions. The following values are
+This is for Investment ledger transactions.  The following values are
 supported for this record type.
 
 =over
@@ -676,10 +679,10 @@ Dollar amount of transaction.
 
 =item Account
 
-This is a list of accounts. It is also often used in files by first
+This is a list of accounts.  It is also often used in files by first
 providing one account record followed by a investment or
-non-investment record type and its transactions. Meaning that that set
-of transactions are related to the specified account. In other cases
+non-investment record type and its transactions.  Meaning that that set
+of transactions are related to the specified account.  In other cases
 it can just be a sequence of Account records.
 
 Each account record supports the following values.
@@ -719,7 +722,7 @@ Current balance of account.
 
 =item Type:Cat
 
-This is a list of categories. The following values are supported for
+This is a list of categories.  The following values are supported for
 categories.
 
 =over
@@ -754,7 +757,7 @@ related if defined.
 
 =item Type:Class
 
-This is a list of classes. The following values are supported for
+This is a list of classes.  The following values are supported for
 classes.
 
 =over
@@ -771,7 +774,7 @@ Description of class.
 
 =item Type:Memorized
 
-This is a list of memorized transactions. The following values are
+This is a list of memorized transactions.  The following values are
 supported for memorized transactions.
 
 =over
@@ -808,7 +811,7 @@ Category the transaction is assigned to.
 =item splits
 
 If the transaction contains splits this will be defined and consist of
-an array of hashes. With each split potentially having the following
+an array of hashes.  With each split potentially having the following
 values.
 
 =over
@@ -859,7 +862,7 @@ Original loan amount.
 
 =item Type:Security
 
-This is a list of securities. The following values are supported for
+This is a list of securities.  The following values are supported for
 securities.
 
 =over
@@ -884,7 +887,7 @@ Security goal.
 
 =item Type:Budget
 
-This is a list of budget values for categories. The following values
+This is a list of budget values for categories.  The following values
 are supported for budget lists.
 
 =over
@@ -924,11 +927,11 @@ month.
 
 =item Type:Payee
 
-This is a list online payee accounts. The following values are
+This is a list online payee accounts.  The following values are
 supported for online payee accounts.
 
 Note: A common field for this type is identified by a "Y" however so
-far I have been unable to determine what that field represents. As a
+far I have been unable to determine what that field represents.  As a
 result this software currently doesn't support it and will raise a
 warning when ever it is found.
 
@@ -966,7 +969,7 @@ Account number for payee transaction.
 
 =item Type:Prices
 
-This is a list of prices for a security. The following values are
+This is a list of prices for a security.  The following values are
 supported for security prices.
 
 =over
@@ -977,7 +980,7 @@ Security Symbol.
 
 =item prices
 
-An array of hashes. With each hash having the following values.
+An array of hashes.  With each hash having the following values.
 
 =over
 
@@ -1008,7 +1011,7 @@ Number of shares of security exchanged for the date.
 =item Option:AllXfr, Option:AutoSwitch, Clear:AutoSwitch
 
 These record types aren't really records but instead ways used to
-control how Quicken processes the QIF file. They have no impact on how
+control how Quicken processes the QIF file.  They have no impact on how
 this software operates and are ignored when found.
 
 =back
@@ -1023,7 +1026,7 @@ found.
 
 =item new()
 
-Creates a new instance of Finance::QIF. Supports the following
+Creates a new instance of Finance::QIF.  Supports the following
 initializing values.
 
   my $qif = Finance::QIF->new( file => "myfile", debug => 1 );
@@ -1044,21 +1047,21 @@ For output files must include ">" with file name.
 
 =item output_record_separator
 
-Can be used to redefine the QIF output record separator. Default is
+Can be used to redefine the QIF output record separator.  Default is
 "\r".
 
   my $qif = Finance::QIF->new( output_record_separator => "\n" );
 
 =item input_record_separator
 
-Can be used to redefine the QIF input record separator. Default is
+Can be used to redefine the QIF input record separator.  Default is
 "\r".
 
   my $qif = Finance::QIF->new( input_record_separator => "\n" );
 
 =item debug
 
-Can be used to output debug information. Default is "0".
+Can be used to output debug information.  Default is "0".
 
   my $qif = Finance::QIF->new( debug => 1 );
 
@@ -1066,7 +1069,8 @@ Can be used to output debug information. Default is "0".
 
 =item file()
 
-Specify file name to use. For output files must include ">" with name.
+Specify file name to use.  For output files must include ">" with
+name.
 
   $qif->file("myfile");
 
@@ -1126,14 +1130,29 @@ Carp, IO::File
 Quicken Interchange Format (QIF) specification
 http://web.intuit.com/support/quicken/docs/d_qif.html
 
-=head1 AUTHOR
+=head1 ACKNOWLEDGEMENTS
 
-Matthew McGillis <matthew@mcgillis.org> http://www.mcgillis.org/
-Phil Lobbes <phil@perkpartners.com>
+=over 4
+
+=item
+
+Simon Cozens C<simon@cpan.org>, Author of original Finance::QIF
+
+=item
+
+Nathan McFarland C<nmcfarl@cpan.org>, Maintainer of original Finance::QIF
+
+=back
+
+=head1 AUTHORS
+
+Matthew McGillis E<lt>matthew@mcgillis.orgE<gt> http://www.mcgillis.org/
+
+Phil Lobbes E<lt>phil at perkpartners dot comE<gt>
 
 =head1 COPYRIGHT
 
-Copyright (C) 2006 by Matthew McGillis. All rights reserved. This
+Copyright (C) 2006 by Matthew McGillis.  All rights reserved.  This
 library is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
 
