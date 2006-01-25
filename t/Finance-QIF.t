@@ -28,7 +28,8 @@ sub testfile {
 
     # account tests
     {
-        my $record = $qif->next();
+        my $record;
+        $record = $qif->next();
         ok( $record->{header}      eq "Account",       $test . "Account" );
         ok( $record->{name}        eq "Asset",         $test . "Account" );
         ok( $record->{description} eq "Sample Asset",  $test . "Account" );
@@ -36,7 +37,7 @@ sub testfile {
         ok( $record->{note}        eq "Note on Asset", $test . "Account" );
         ok( $record->{type}        eq "Oth A",         $test . "Account" );
         ok( $record->{balance}     eq "25,000.00",     $test . "Account" );
-        my $record = $qif->next();
+        $record = $qif->next();
         ok( $record->{header}      eq "Account",         $test . "Account" );
         ok( $record->{name}        eq "Bank",            $test . "Account" );
         ok( $record->{description} eq "Sample Bank",     $test . "Account" );
@@ -44,15 +45,15 @@ sub testfile {
         ok( $record->{note}        eq "Notes on Sample", $test . "Account" );
         ok( $record->{type}        eq "Bank",            $test . "Account" );
         ok( $record->{balance}     eq "1,465.00",        $test . "Account" );
-        my $record = $qif->next();
-        ok( $record->{header}      eq "Account",     $test . "Account" );
-        ok( $record->{name}        eq "Cash",        $test . "Account" );
-        ok( $record->{description} eq "Sample Cash", $test . "Account" );
-        ok( $record->{tax}     eq "",             $test . "Account" );
-        ok( $record->{note}    eq "Note on Cash", $test . "Account" );
-        ok( $record->{type}    eq "Cash",         $test . "Account" );
-        ok( $record->{balance} eq "0.00",         $test . "Account" );
-        my $record = $qif->next();
+        $record = $qif->next();
+        ok( $record->{header}      eq "Account",      $test . "Account" );
+        ok( $record->{name}        eq "Cash",         $test . "Account" );
+        ok( $record->{description} eq "Sample Cash",  $test . "Account" );
+        ok( $record->{tax}         eq "",             $test . "Account" );
+        ok( $record->{note}        eq "Note on Cash", $test . "Account" );
+        ok( $record->{type}        eq "Cash",         $test . "Account" );
+        ok( $record->{balance}     eq "0.00",         $test . "Account" );
+        $record = $qif->next();
         ok( $record->{header}      eq "Account",      $test . "Account" );
         ok( $record->{name}        eq "Credit Card",  $test . "Account" );
         ok( $record->{description} eq "Sample Card",  $test . "Account" );
@@ -61,7 +62,7 @@ sub testfile {
         ok( $record->{note}        eq "Note on Card", $test . "Account" );
         ok( $record->{type}        eq "CCard",        $test . "Account" );
         ok( $record->{balance}     eq "0.00",         $test . "Account" );
-        my $record = $qif->next();
+        $record = $qif->next();
         ok( $record->{header}      eq "Account",           $test . "Account" );
         ok( $record->{name}        eq "Liability",         $test . "Account" );
         ok( $record->{description} eq "Sample Liability",  $test . "Account" );
@@ -69,7 +70,7 @@ sub testfile {
         ok( $record->{note}        eq "Note on Liability", $test . "Account" );
         ok( $record->{type}        eq "Oth L",             $test . "Account" );
         ok( $record->{balance}     eq "50,000.00",         $test . "Account" );
-        my $record = $qif->next();
+        $record = $qif->next();
         ok( $record->{header}      eq "Account",      $test . "Account" );
         ok( $record->{name}        eq "Mutual Fund",  $test . "Account" );
         ok( $record->{description} eq "Sample Fund",  $test . "Account" );
@@ -77,7 +78,7 @@ sub testfile {
         ok( $record->{note}        eq "Note on Fund", $test . "Account" );
         ok( $record->{type}        eq "Mutual",       $test . "Account" );
         ok( $record->{balance}     eq "672.87",       $test . "Account" );
-        my $record = $qif->next();
+        $record = $qif->next();
         ok( $record->{header}      eq "Account",           $test . "Account" );
         ok( $record->{name}        eq "Portfolio",         $test . "Account" );
         ok( $record->{description} eq "Sample Portfolio",  $test . "Account" );
@@ -156,12 +157,13 @@ sub testfile {
 
     # Bank test
     {
-        my $record = $qif->next();
+        my $record;
+        $record = $qif->next();
         ok( $record->{header}  eq "Account",  $test . "Bank" );
         ok( $record->{name}    eq "Bank",     $test . "Bank" );
         ok( $record->{type}    eq "Bank",     $test . "Bank" );
         ok( $record->{balance} eq "1,465.00", $test . "Bank" );
-        my $record = $qif->next();
+        $record = $qif->next();
         ok( $record->{header}   eq "Type:Bank",       $test . "Bank" );
         ok( $record->{date}     eq "1/10/06",         $test . "Bank" );
         ok( $record->{payee}    eq "Opening Balance", $test . "Bank" );
@@ -170,7 +172,7 @@ sub testfile {
         ok( $record->{address}  eq "",                $test . "Bank" );
         ok( $record->{status}   eq "X",               $test . "Bank" );
         ok( $record->{category} eq "[Bank]",          $test . "Bank" );
-        my $record = $qif->next();
+        $record = $qif->next();
         ok( $record->{header}              eq "Type:Bank", $test . "Bank" );
         ok( $record->{date}                eq "1/10/06",   $test . "Bank" );
         ok( $record->{payee}               eq "Paycheck",  $test . "Bank" );
@@ -193,7 +195,7 @@ sub testfile {
             $test . "Bank" );
         ok( $record->{splits}[3]{memo}   eq "",       $test . "Bank" );
         ok( $record->{splits}[3]{amount} eq "-10.00", $test . "Bank" );
-        my $record = $qif->next();
+        $record = $qif->next();
         ok( $record->{header}   eq "Type:Bank", $test . "Bank" );
         ok( $record->{date}     eq "1/17/06",   $test . "Bank" );
         ok( $record->{payee}    eq "Safeway",   $test . "Bank" );
@@ -201,7 +203,7 @@ sub testfile {
         ok( $record->{amount}   eq "-100.00",   $test . "Bank" );
         ok( $record->{address}  eq "",          $test . "Bank" );
         ok( $record->{category} eq "Groceries", $test . "Bank" );
-        my $record = $qif->next();
+        $record = $qif->next();
         ok( $record->{header}              eq "Type:Bank", $test . "Bank" );
         ok( $record->{date}                eq "2/17/06",   $test . "Bank" );
         ok( $record->{payee}               eq "Safeway",   $test . "Bank" );
@@ -220,12 +222,13 @@ sub testfile {
 
     # Cash test
     {
-        my $record = $qif->next();
+        my $record;
+        $record = $qif->next();
         ok( $record->{header}  eq "Account", $test . "Cash" );
         ok( $record->{name}    eq "Cash",    $test . "Cash" );
         ok( $record->{type}    eq "Cash",    $test . "Cash" );
         ok( $record->{balance} eq "0.00",    $test . "Cash" );
-        my $record = $qif->next();
+        $record = $qif->next();
         ok( $record->{header}   eq "Type:Cash",       $test . "Cash" );
         ok( $record->{date}     eq "1/10/06",         $test . "Cash" );
         ok( $record->{payee}    eq "Opening Balance", $test . "Cash" );
@@ -238,13 +241,14 @@ sub testfile {
 
     # Credit Card test
     {
-        my $record = $qif->next();
+        my $record;
+        $record = $qif->next();
         ok( $record->{header}  eq "Account",     $test . "Credit Card" );
         ok( $record->{name}    eq "Credit Card", $test . "Credit Card" );
         ok( $record->{limit}   eq "15,000.00",   $test . "Credit Card" );
         ok( $record->{type}    eq "CCard",       $test . "Credit Card" );
         ok( $record->{balance} eq "0.00",        $test . "Credit Card" );
-        my $record = $qif->next();
+        $record = $qif->next();
         ok( $record->{header}   eq "Type:CCard",      $test . "Credit Card" );
         ok( $record->{date}     eq "1/10/06",         $test . "Credit Card" );
         ok( $record->{payee}    eq "Opening Balance", $test . "Credit Card" );
@@ -257,12 +261,13 @@ sub testfile {
 
     # Liability test
     {
-        my $record = $qif->next();
+        my $record;
+        $record = $qif->next();
         ok( $record->{header}  eq "Account",   $test . "Liability" );
         ok( $record->{name}    eq "Liability", $test . "Liability" );
         ok( $record->{type}    eq "Oth L",     $test . "Liability" );
         ok( $record->{balance} eq "50,000.00", $test . "Liability" );
-        my $record = $qif->next();
+        $record = $qif->next();
         ok( $record->{header}   eq "Type:Oth L",      $test . "Liability" );
         ok( $record->{date}     eq "1/10/06",         $test . "Liability" );
         ok( $record->{payee}    eq "Opening Balance", $test . "Liability" );
@@ -307,13 +312,14 @@ sub testfile {
 
     # Memorized test
     {
-        my $record = $qif->next();
+        my $record;
+        $record = $qif->next();
         ok( $record->{header}      eq "Type:Memorized", $test . "Memorized" );
         ok( $record->{amount}      eq "-50.00",         $test . "Memorized" );
         ok( $record->{payee}       eq "Safeway",        $test . "Memorized" );
         ok( $record->{memo}        eq "",               $test . "Memorized" );
         ok( $record->{transaction} eq "C",              $test . "Memorized" );
-        my $record = $qif->next();
+        $record = $qif->next();
         ok( $record->{header}   eq "Type:Memorized", $test . "Memorized" );
         ok( $record->{amount}   eq "-1,140.17",      $test . "Memorized" );
         ok( $record->{payee}    eq "Bank",           $test . "Memorized" );
