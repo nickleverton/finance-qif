@@ -1022,9 +1022,7 @@ found.
 
 =head1 METHODS
 
-=over
-
-=item new()
+=head2 new()
 
 Creates a new instance of Finance::QIF.  Supports the following
 initializing values.
@@ -1067,14 +1065,14 @@ Can be used to output debug information.  Default is "0".
 
 =back
 
-=item file()
+=head2 file()
 
 Specify file name to use.  For output files must include ">" with
 name.
 
   $qif->file("myfile");
 
-=item open()
+=head2 open()
 
 Open already specified file.
 
@@ -1084,7 +1082,7 @@ Opens specified file.
 
   $qif->open("myfile");
 
-=item next()
+=head2 next()
 
 For input files return the next record in the QIF file.
 
@@ -1092,31 +1090,29 @@ For input files return the next record in the QIF file.
 
 Returns null if no more records are available.
 
-=item header()
+=head2 header()
 
 For output files use to output the passed header for records that will
 then be written with write.
 
 <list supported headers>
 
-=item write()
+=head2 write()
 
 For output file us to output the passed record to the file.
 
-=item reset()
+=head2 reset()
 
 Resets the filehandle so the records can be read again from the
 beginning of the file.
 
   $qif->reset();
 
-=item close()
+=head2 close()
 
 Closes the open file.
 
   $qif->close();
-
-=back
 
 =head1 TODO
 
