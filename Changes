@@ -1,6 +1,9 @@
-Revision history for Perl extension Stream::QIF.
+Revision history for Perl extension Finance::QIF.
+
+2.00B Mon Jan 26 19:14:00 2006
+	- Beta version of Finance::QIF that should be able to read and
+          write exports from Quicken.
 
 0.01  Mon Jan  9 12:07:56 2006
 	- original version; created by h2xs 1.23 with options
-		-AX -n Stream::QIF
-
+		-AX -n Finance::QIF

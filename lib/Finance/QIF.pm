@@ -6,7 +6,7 @@ use warnings;
 use Carp;
 use IO::File;
 
-our $VERSION = '0.01';
+our $VERSION = '2.00';
 
 my %noninvestment = (
     "D" => "date",
@@ -387,10 +387,10 @@ sub write {
                         if ( $self->{currentheader} eq "Type:Payee" ) {
 
                           # The address fields are numbered for this record type
-                            for ( my $count = 1 ; $count < 3 ; $count++ ) {
+                            for ( my $count = 0 ; $count < 3 ; $count++ ) {
                                 if ( $count <= $#lines ) {
                                     $self->_writeline( "A", $count,
-                                        $lines[ $count - 1 ] );
+                                        $lines[ $count ] );
                                 }
                                 else {
                                     $self->_writeline( "A", $count );
@@ -491,9 +491,9 @@ Finance::QIF - Parse and create Quicken Interchange Format files
 =head1 SYNOPSIS
 
   use Finance::QIF;
-
+  
   my $qif = Finance::QIF->new( file => "test.qif" );
-
+  
   while ( my $record = $qif->next() ) {
       print( "Header: ", $record->{header}, "\n" );
       foreach my $key ( keys %{$record} ) {
@@ -1037,25 +1037,25 @@ If the file is specified it will be opened on new.
 
 Specifies file to use for processing.
 
-  my $qif = Finance::QIF->new( file => "myfile" );
+  my $in = Finance::QIF->new( file => "myfile" );
 
 For output files must include ">" with file name.
 
-  my $qif = Finance::QIF->new( file => ">myfile" );
+  my $out = Finance::QIF->new( file => ">myfile" );
 
 =item output_record_separator
 
 Can be used to redefine the QIF output record separator.  Default is
 "\r".
 
-  my $qif = Finance::QIF->new( output_record_separator => "\n" );
+  my $out = Finance::QIF->new( output_record_separator => "\n" );
 
 =item input_record_separator
 
 Can be used to redefine the QIF input record separator.  Default is
 "\r".
 
-  my $qif = Finance::QIF->new( input_record_separator => "\n" );
+  my $in = Finance::QIF->new( input_record_separator => "\n" );
 
 =item debug
 
@@ -1086,7 +1086,7 @@ Opens specified file.
 
 For input files return the next record in the QIF file.
 
-  my $record = $qif->next();
+  my $record = $in->next();
 
 Returns null if no more records are available.
 
@@ -1095,11 +1095,15 @@ Returns null if no more records are available.
 For output files use to output the passed header for records that will
 then be written with write.
 
-<list supported headers>
+  $out->header("Type:Bank");
+
+See L<RECORD TYPES & VALUES> for list of possible record types that can be passed.
 
 =head2 write()
 
-For output file us to output the passed record to the file.
+For output files use to output the passed record to the file.
+
+  $out->write($record);
 
 =head2 reset()
 
@@ -1114,6 +1118,25 @@ Closes the open file.
 
   $qif->close();
 
+=head1 EXAMPLES
+
+Read an existing QIF file then write out to new QIF file.
+
+  my $in=Finance::QIF->new(file=>"input.qif");
+  my $out=Finance::QIF->new(file=>">write.qif");
+  
+  my $header="";
+  while (my $record=$in->next()) {
+    if ($header ne $record->{header}) {
+      $out->header($record->{header});
+      $header=$record->{header};
+    }
+    $out->write($record);
+  }
+  
+  $in->close();
+  $out->close();
+
 =head1 TODO
 
 Type:Payee is not complete need real exports from quicken that use
@@ -1121,30 +1144,24 @@ this feature.
 
 =head1 SEE ALSO
 
-Carp, IO::File
+L<Carp>, L<IO::File>
 
 Quicken Interchange Format (QIF) specification
 http://web.intuit.com/support/quicken/docs/d_qif.html
 
 =head1 ACKNOWLEDGEMENTS
 
-=over 4
-
-=item
-
 Simon Cozens C<simon@cpan.org>, Author of original Finance::QIF
 
-=item
-
 Nathan McFarland C<nmcfarl@cpan.org>, Maintainer of original Finance::QIF
-
-=back
 
 =head1 AUTHORS
 
 Matthew McGillis E<lt>matthew@mcgillis.orgE<gt> http://www.mcgillis.org/
 
 Phil Lobbes E<lt>phil at perkpartners dot comE<gt>
+
+Project maintaned at http://finance-qif.sourceforge.net/
 
 =head1 COPYRIGHT
 

@@ -1,10 +1,18 @@
-use Test::More tests => 787;
-BEGIN { use_ok('Finance::QIF') }
+use Test::More tests => 851;
+BEGIN {
+   BEGIN {$SIG{"__WARN__"} = sub {warn $_[0] if $DOWARN} }
+   $DOWARN=1;
+   use_ok('Finance::QIF');
+}
 
 testfile( "Read ", "t/test.qif" );
 my $in  = Finance::QIF->new( file => "t/test.qif" );
 my $out = Finance::QIF->new( file => ">t/write.qif" );
 
+# need to find appropriate way to test missing defiend fields that
+# this test currently correctly generates since Y is not supported.
+# for now just hide this warning
+$DOWARN=0;
 my $header = "";
 while ( my $record = $in->next() ) {
     if ( $header ne $record->{header} ) {
@@ -13,7 +21,8 @@ while ( my $record = $in->next() ) {
     }
     $out->write($record);
 }
-
+# turn warnings back on
+$DOWARN=1;
 $in->close();
 $out->close();
 testfile( "Write ", "t/write.qif" );
@@ -89,23 +98,48 @@ sub testfile {
     }
 
     # security tests
-    for ( my $count = 0 ; $count < 2 ; $count++ ) {
+    {
         my $record = $qif->next();
+        ok( $record->{header}   eq "Type:Security", $test . "Security" );
+        ok( $record->{security} eq "Intuit",        $test . "Security" );
+        ok( $record->{symbol}   eq "INTU",          $test . "Security" );
+        ok( $record->{type}     eq "Stock",         $test . "Security" );
+        ok( $record->{goal}     eq "High Risk",     $test . "Security" );
+        $record = $qif->next();
         ok( $record->{header} eq "Type:Security", $test . "Security" );
     }
 
     # payee tests
-    # need to find appropriate way to test missing defiend fields that
-    # this test currently correctly generates since Y is not supported.
-    for ( my $count = 0 ; $count < 1 ; $count++ ) {
+    {
+        # need to find appropriate way to test missing defiend fields that
+        # this test currently correctly generates since Y is not supported.
+        # for now just hide this by dumping errors to /dev/null
+        $DOWARN=0;
         my $record = $qif->next();
-        ok( $record->{header} eq "Type:Payee", $test . "Payee" );
+        $DOWARN=1;
+        ok( $record->{header}  eq "Type:Payee",      $test . "Payee" );
+        ok( $record->{name}    eq "Safeway",         $test . "Payee" );
+        ok( $record->{address} eq "Safeway Address\n\n",
+                                                     $test . "Payee" );
+        ok( $record->{city}    eq "City",            $test . "Payee" );
+        ok( $record->{state}   eq "SC",              $test . "Payee" );
+        ok( $record->{zip}     eq "99999     ",      $test . "Payee" );
+        ok( $record->{phone}   eq "3333333333",      $test . "Payee" );
+        ok( $record->{account} eq "123456789",       $test . "Payee" );
     }
 
     # category tests
-    for ( my $count = 0 ; $count < 96 ; $count++ ) {
+    {
         my $record = $qif->next();
-        ok( $record->{header} eq "Type:Cat", $test . "Category" );
+        ok( $record->{header}      eq "Type:Cat",  $test . "Category" );
+        ok( $record->{name}        eq "Auto",      $test . "Category" );
+        ok( $record->{description} eq "Automobile Expenses",
+                                                   $test . "Category" );
+        ok( $record->{expense}     eq "",          $test . "Category" );
+        for ( my $count = 0 ; $count < 95 ; $count++ ) {
+            $record = $qif->next();
+            ok( $record->{header} eq "Type:Cat", $test . "Category" );
+        }
     }
 
     # budget tests
@@ -131,14 +165,18 @@ sub testfile {
         ok( $record->{budget}[10]  eq "-100.00",     $test . "Budget" );
         ok( $record->{budget}[11]  eq "-100.00",     $test . "Budget" );
         for ( my $count = 0 ; $count < 78 ; $count++ ) {
-            my $record = $qif->next();
+            $record = $qif->next();
             ok( $record->{header} eq "Type:Budget", $test . "Budget" );
         }
     }
 
     # Class tests
-    for ( my $count = 0 ; $count < 2 ; $count++ ) {
+    {
         my $record = $qif->next();
+        ok( $record->{header}      eq "Type:Class",        $test . "Class" );
+        ok( $record->{name}        eq "Class",             $test . "Class" );
+        ok( $record->{description} eq "Class Description", $test . "Class" );
+        $record = $qif->next();
         ok( $record->{header} eq "Type:Class", $test . "Class" );
     }
 
@@ -150,15 +188,14 @@ sub testfile {
         ok( $record->{type}    eq "Oth A",     $test . "Oth A" );
         ok( $record->{balance} eq "25,000.00", $test . "Oth A" );
         for ( my $count = 0 ; $count < 2 ; $count++ ) {
-            my $record = $qif->next();
+            $record = $qif->next();
             ok( $record->{header} eq "Type:Oth A", $test . "Oth A" );
         }
     }
 
     # Bank test
     {
-        my $record;
-        $record = $qif->next();
+        my $record = $qif->next();
         ok( $record->{header}  eq "Account",  $test . "Bank" );
         ok( $record->{name}    eq "Bank",     $test . "Bank" );
         ok( $record->{type}    eq "Bank",     $test . "Bank" );
@@ -222,8 +259,7 @@ sub testfile {
 
     # Cash test
     {
-        my $record;
-        $record = $qif->next();
+        my $record = $qif->next();
         ok( $record->{header}  eq "Account", $test . "Cash" );
         ok( $record->{name}    eq "Cash",    $test . "Cash" );
         ok( $record->{type}    eq "Cash",    $test . "Cash" );
@@ -241,8 +277,7 @@ sub testfile {
 
     # Credit Card test
     {
-        my $record;
-        $record = $qif->next();
+        my $record = $qif->next();
         ok( $record->{header}  eq "Account",     $test . "Credit Card" );
         ok( $record->{name}    eq "Credit Card", $test . "Credit Card" );
         ok( $record->{limit}   eq "15,000.00",   $test . "Credit Card" );
@@ -261,8 +296,7 @@ sub testfile {
 
     # Liability test
     {
-        my $record;
-        $record = $qif->next();
+        my $record = $qif->next();
         ok( $record->{header}  eq "Account",   $test . "Liability" );
         ok( $record->{name}    eq "Liability", $test . "Liability" );
         ok( $record->{type}    eq "Oth L",     $test . "Liability" );
@@ -286,7 +320,7 @@ sub testfile {
         ok( $record->{type}    eq "Mutual",      $test . "Mutual Fund" );
         ok( $record->{balance} eq "672.87",      $test . "Mutual Fund" );
         for ( my $count = 0 ; $count < 1 ; $count++ ) {
-            my $record = $qif->next();
+            $record = $qif->next();
             ok( $record->{header} eq "Type:Invst", $test . "Mutual Fund" );
         }
     }
@@ -298,22 +332,41 @@ sub testfile {
         ok( $record->{name}    eq "Portfolio", $test . "Portfolio" );
         ok( $record->{type}    eq "Port",      $test . "Portfolio" );
         ok( $record->{balance} eq "2,651.00",  $test . "Portfolio" );
-        for ( my $count = 0 ; $count < 1 ; $count++ ) {
-            my $record = $qif->next();
-            ok( $record->{header} eq "Type:Invst", $test . "Portfolio" );
-        }
+    }
+
+    # Invest test
+    {
+        my $record = $qif->next();
+        ok( $record->{header}   eq "Type:Invst",    $test . "Invest" );
+        ok( $record->{date}     eq "1/10/06",       $test . "Invest" );
+        ok( $record->{action}   eq "ShrsIn",        $test . "Invest" );
+        ok( $record->{security} eq "Intuit",        $test . "Invest" );
+        ok( $record->{quantity} eq "50",            $test . "Invest" );
+        ok( $record->{memo}     eq "Initial Move",  $test . "Invest" );
     }
 
     # Prices test
-    for ( my $count = 0 ; $count < 2 ; $count++ ) {
+    {
         my $record = $qif->next();
+        ok( $record->{header}            eq "Type:Prices", $test . "Prices" );
+        ok( $record->{symbol}            eq "INTU",        $test . "Prices" );
+        ok( $record->{prices}[0]{close}  eq "55.400",      $test . "Prices" );
+        ok( $record->{prices}[0]{date}   eq "12/12/05",    $test . "Prices" );
+        ok( $record->{prices}[0]{max}    eq "55.560",      $test . "Prices" );
+        ok( $record->{prices}[0]{min}    eq "53.660",      $test . "Prices" );
+        ok( $record->{prices}[0]{volume} eq "3120461",     $test . "Prices" );
+        ok( $record->{prices}[1]{close}  eq "55.570",      $test . "Prices" );
+        ok( $record->{prices}[1]{date}   eq "12/13/05",    $test . "Prices" );
+        ok( $record->{prices}[1]{max}    eq "55.740",      $test . "Prices" );
+        ok( $record->{prices}[1]{min}    eq "54.600",      $test . "Prices" );
+        ok( $record->{prices}[1]{volume} eq "2437647",     $test . "Prices" );
+        $record = $qif->next();
         ok( $record->{header} eq "Type:Prices", $test . "Prices" );
     }
 
     # Memorized test
     {
-        my $record;
-        $record = $qif->next();
+        my $record = $qif->next();
         ok( $record->{header}      eq "Type:Memorized", $test . "Memorized" );
         ok( $record->{amount}      eq "-50.00",         $test . "Memorized" );
         ok( $record->{payee}       eq "Safeway",        $test . "Memorized" );
