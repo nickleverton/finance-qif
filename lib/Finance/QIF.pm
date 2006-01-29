@@ -1163,7 +1163,7 @@ Matthew McGillis E<lt>matthew@mcgillis.orgE<gt> L<http://www.mcgillis.org/>
 
 Phil Lobbes E<lt>phil at perkpartners dot comE<gt>
 
-Project maintaned at L<http://finance-qif.sourceforge.net/>
+Project maintaned at L<http://www.sourceforge.net/projects/finance-qif>
 
 =head1 COPYRIGHT
 
