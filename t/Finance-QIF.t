@@ -1,8 +1,12 @@
 use Test::More tests => 851;
+
 BEGIN {
-   BEGIN {$SIG{"__WARN__"} = sub {warn $_[0] if $DOWARN} }
-   $DOWARN=1;
-   use_ok('Finance::QIF');
+
+    BEGIN {
+        $SIG{"__WARN__"} = sub { warn $_[0] if $DOWARN }
+    }
+    $DOWARN = 1;
+    use_ok('Finance::QIF');
 }
 
 testfile( "Read ", "t/test.qif" );
@@ -12,7 +16,7 @@ my $out = Finance::QIF->new( file => ">t/write.qif" );
 # need to find appropriate way to test missing defiend fields that
 # this test currently correctly generates since Y is not supported.
 # for now just hide this warning
-$DOWARN=0;
+$DOWARN = 0;
 my $header = "";
 while ( my $record = $in->next() ) {
     if ( $header ne $record->{header} ) {
@@ -21,8 +25,9 @@ while ( my $record = $in->next() ) {
     }
     $out->write($record);
 }
+
 # turn warnings back on
-$DOWARN=1;
+$DOWARN = 1;
 $in->close();
 $out->close();
 testfile( "Write ", "t/write.qif" );
@@ -111,31 +116,31 @@ sub testfile {
 
     # payee tests
     {
+
         # need to find appropriate way to test missing defiend fields that
         # this test currently correctly generates since Y is not supported.
         # for now just hide this by dumping errors to /dev/null
-        $DOWARN=0;
+        $DOWARN = 0;
         my $record = $qif->next();
-        $DOWARN=1;
-        ok( $record->{header}  eq "Type:Payee",      $test . "Payee" );
-        ok( $record->{name}    eq "Safeway",         $test . "Payee" );
-        ok( $record->{address} eq "Safeway Address\n\n",
-                                                     $test . "Payee" );
-        ok( $record->{city}    eq "City",            $test . "Payee" );
-        ok( $record->{state}   eq "SC",              $test . "Payee" );
-        ok( $record->{zip}     eq "99999     ",      $test . "Payee" );
-        ok( $record->{phone}   eq "3333333333",      $test . "Payee" );
-        ok( $record->{account} eq "123456789",       $test . "Payee" );
+        $DOWARN = 1;
+        ok( $record->{header}  eq "Type:Payee",          $test . "Payee" );
+        ok( $record->{name}    eq "Safeway",             $test . "Payee" );
+        ok( $record->{address} eq "Safeway Address\n\n", $test . "Payee" );
+        ok( $record->{city}    eq "City",                $test . "Payee" );
+        ok( $record->{state}   eq "SC",                  $test . "Payee" );
+        ok( $record->{zip}     eq "99999     ",          $test . "Payee" );
+        ok( $record->{phone}   eq "3333333333",          $test . "Payee" );
+        ok( $record->{account} eq "123456789",           $test . "Payee" );
     }
 
     # category tests
     {
         my $record = $qif->next();
-        ok( $record->{header}      eq "Type:Cat",  $test . "Category" );
-        ok( $record->{name}        eq "Auto",      $test . "Category" );
+        ok( $record->{header} eq "Type:Cat", $test . "Category" );
+        ok( $record->{name}   eq "Auto",     $test . "Category" );
         ok( $record->{description} eq "Automobile Expenses",
-                                                   $test . "Category" );
-        ok( $record->{expense}     eq "",          $test . "Category" );
+            $test . "Category" );
+        ok( $record->{expense} eq "", $test . "Category" );
         for ( my $count = 0 ; $count < 95 ; $count++ ) {
             $record = $qif->next();
             ok( $record->{header} eq "Type:Cat", $test . "Category" );
@@ -337,12 +342,12 @@ sub testfile {
     # Invest test
     {
         my $record = $qif->next();
-        ok( $record->{header}   eq "Type:Invst",    $test . "Invest" );
-        ok( $record->{date}     eq "1/10/06",       $test . "Invest" );
-        ok( $record->{action}   eq "ShrsIn",        $test . "Invest" );
-        ok( $record->{security} eq "Intuit",        $test . "Invest" );
-        ok( $record->{quantity} eq "50",            $test . "Invest" );
-        ok( $record->{memo}     eq "Initial Move",  $test . "Invest" );
+        ok( $record->{header}   eq "Type:Invst",   $test . "Invest" );
+        ok( $record->{date}     eq "1/10/06",      $test . "Invest" );
+        ok( $record->{action}   eq "ShrsIn",       $test . "Invest" );
+        ok( $record->{security} eq "Intuit",       $test . "Invest" );
+        ok( $record->{quantity} eq "50",           $test . "Invest" );
+        ok( $record->{memo}     eq "Initial Move", $test . "Invest" );
     }
 
     # Prices test
