@@ -491,9 +491,9 @@ Finance::QIF - Parse and create Quicken Interchange Format files
 =head1 SYNOPSIS
 
   use Finance::QIF;
-  
+
   my $qif = Finance::QIF->new( file => "test.qif" );
-  
+
   while ( my $record = $qif->next() ) {
       print( "Header: ", $record->{header}, "\n" );
       foreach my $key ( keys %{$record} ) {
@@ -532,19 +532,20 @@ Finance::QIF - Parse and create Quicken Interchange Format files
 =head1 DESCRIPTION
 
 Finance::QIF is a module for working with QIF (Quicken Interchange
-Format) files in Perl.  This module reads QIF transactions from a data
-file passing each successive transaction to the caller for processing.
-This module also has the capability of writing QIF transactions to a
-file.
+Format) files in Perl.  This module reads QIF data records from a file
+passing each successive record to the caller for processing.  This
+module also has the capability of writing QIF records to a file.
 
-A QIF file has a basic format of record type followed by a set of
-records of that type.  Within the file there can be multiple sets of
-these.  Sometimes record types may not have any actual data.
+The QIF file format typically consists of a header containing a record
+or transaction type, followed by associated data records.  Within a
+file there may be multiple headers.  Headers are usually followed by
+data records, however data is not required to always follow a header.
 
-A hash reference is returned for each record.  The hash will have a
-"header" value which contains the record type processed along with all
-supported and found values for that record type.  If a value is not
-specified in the data file, the value will not exist in this hash.
+A hash reference is returned for each record read from a file.  The
+hash will have a "header" value which contains the header type that
+was read along with all supported values found for that record.  If a
+value is not specified in the data file, the value will not exist in
+this hash.
 
 No processing or validation is done on values found in files or data
 structures to try and convert them into appropriate types and formats.
@@ -559,8 +560,8 @@ The following record types are currently supported by this module:
 
 =item Type:Bank, Type:Cash, Type:CCard, Type:Oth A, Type:Oth L
 
-These are non investment ledger transactions.  All of these types
-support the following values.
+These are non investment ledger transactions.  All of these record
+types support the following values.
 
 =over
 
@@ -599,8 +600,8 @@ Category the transaction is assigned to.
 =item splits
 
 If the transaction contains splits this will be defined and consist of
-an array of hashes.  With each split potentially having the following
-values.
+an array of hash references.  With each split potentially having the
+following values.
 
 =over
 
@@ -679,11 +680,11 @@ Dollar amount of transaction.
 
 =item Account
 
-This is a list of accounts.  It is also often used in files by first
-providing one account record followed by a investment or
-non-investment record type and its transactions.  Meaning that that set
-of transactions are related to the specified account.  In other cases
-it can just be a sequence of Account records.
+This is a list of accounts.  In cases where it is used in a file by
+first providing one account record followed by a investment or
+non-investment record type and its transactions, it means that that
+set of transactions is related to the specified account.  In other
+cases it can just be a sequence of Account records.
 
 Each account record supports the following values.
 
@@ -723,7 +724,7 @@ Current balance of account.
 =item Type:Cat
 
 This is a list of categories.  The following values are supported for
-categories.
+category records.
 
 =over
 
@@ -758,7 +759,7 @@ related if defined.
 =item Type:Class
 
 This is a list of classes.  The following values are supported for
-classes.
+class records.
 
 =over
 
@@ -775,7 +776,7 @@ Description of class.
 =item Type:Memorized
 
 This is a list of memorized transactions.  The following values are
-supported for memorized transactions.
+supported for memorized transaction records.
 
 =over
 
@@ -863,7 +864,7 @@ Original loan amount.
 =item Type:Security
 
 This is a list of securities.  The following values are supported for
-securities.
+security records.
 
 =over
 
@@ -888,7 +889,7 @@ Security goal.
 =item Type:Budget
 
 This is a list of budget values for categories.  The following values
-are supported for budget lists.
+are supported for budget records.
 
 =over
 
@@ -928,7 +929,7 @@ month.
 =item Type:Payee
 
 This is a list online payee accounts.  The following values are
-supported for online payee accounts.
+supported for online payee account records.
 
 Note: A common field for this type is identified by a "Y" however so
 far I have been unable to determine what that field represents.  As a
@@ -970,7 +971,7 @@ Account number for payee transaction.
 =item Type:Prices
 
 This is a list of prices for a security.  The following values are
-supported for security prices.
+supported for security prices records.
 
 =over
 
@@ -1010,15 +1011,15 @@ Number of shares of security exchanged for the date.
 
 =item Option:AllXfr, Option:AutoSwitch, Clear:AutoSwitch
 
-These record types aren't really records but instead ways used to
-control how Quicken processes the QIF file.  They have no impact on how
-this software operates and are ignored when found.
+These record types aren't related to transactions but instead provided
+ways to control how Quicken processes the QIF file.  They have no
+impact on how this software operates and are ignored when found.
 
 =back
 
-Note: If this software finds unsupported record types or values in the
-data file a warning will be generated on what unexpected value was
-found.
+Note: If this software finds unsupported record types or values in a
+data file a warning will be generated containing information on what
+unexpected value was found.
 
 =head1 METHODS
 
@@ -1097,7 +1098,8 @@ then be written with write.
 
   $out->header("Type:Bank");
 
-See L<RECORD TYPES & VALUES> for list of possible record types that can be passed.
+See L<RECORD TYPES & VALUES> for list of possible record types that
+can be passed.
 
 =head2 write()
 
@@ -1139,8 +1141,8 @@ Read an existing QIF file then write out to new QIF file.
 
 =head1 TODO
 
-Type:Payee is not complete need real exports from quicken that use
-this feature.
+Type:Payee is not complete.  Real exports from Quicken with this
+feature being used are required to complete support for this type.
 
 =head1 SEE ALSO
 
