@@ -1122,18 +1122,18 @@ Closes the open file.
 
 Read an existing QIF file then write out to new QIF file.
 
-  my $in=Finance::QIF->new(file=>"input.qif");
-  my $out=Finance::QIF->new(file=>">write.qif");
-  
-  my $header="";
-  while (my $record=$in->next()) {
-    if ($header ne $record->{header}) {
-      $out->header($record->{header});
-      $header=$record->{header};
-    }
-    $out->write($record);
+  my $in  = Finance::QIF->new( file => "input.qif" );
+  my $out = Finance::QIF->new( file => ">write.qif" );
+
+  my $header = "";
+  while ( my $record = $in->next() ) {
+      if ( $header ne $record->{header} ) {
+          $out->header( $record->{header} );
+          $header = $record->{header};
+      }
+      $out->write($record);
   }
-  
+
   $in->close();
   $out->close();
 
@@ -1147,7 +1147,7 @@ this feature.
 L<Carp>, L<IO::File>
 
 Quicken Interchange Format (QIF) specification
-http://web.intuit.com/support/quicken/docs/d_qif.html
+L<http://web.intuit.com/support/quicken/docs/d_qif.html>
 
 =head1 ACKNOWLEDGEMENTS
 
@@ -1157,11 +1157,11 @@ Nathan McFarland C<nmcfarl@cpan.org>, Maintainer of original Finance::QIF
 
 =head1 AUTHORS
 
-Matthew McGillis E<lt>matthew@mcgillis.orgE<gt> http://www.mcgillis.org/
+Matthew McGillis E<lt>matthew@mcgillis.orgE<gt> L<http://www.mcgillis.org/>
 
 Phil Lobbes E<lt>phil at perkpartners dot comE<gt>
 
-Project maintaned at http://finance-qif.sourceforge.net/
+Project maintaned at L<http://finance-qif.sourceforge.net/>
 
 =head1 COPYRIGHT
 
