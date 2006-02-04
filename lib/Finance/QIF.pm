@@ -307,11 +307,11 @@ sub _getline {
 sub _warning {
     my $self    = shift;
     my $message = shift;
-    carp $message
-      . ' in file "'
-      . $self->{file}
-      . '" line '
-      . $self->{linecount};
+    carp(   $message
+          . ' in file "'
+          . $self->{file}
+          . '" line '
+          . $self->{linecount} );
 }
 
 sub header {
@@ -321,9 +321,9 @@ sub header {
     local $\ = $self->{output_record_separator};
     print( $file "!", $header );
 
-    # used during write to validate passed record is appropriate for current
-    # header also generate revers lookup for mapping record values to file
-    # key identifier.
+    # used during write to validate passed record is appropriate for
+    # current header also generate reverse lookup for mapping record
+    # values to file key identifier.
     $self->{currentheader} = $header;
     foreach my $key ( keys %{ $header{$header} } ) {
         $self->{reversemap}{ $header{$header}{$key} } = $key;
@@ -391,7 +391,7 @@ sub write {
                             for ( my $count = 0 ; $count < 3 ; $count++ ) {
                                 if ( $count <= $#lines ) {
                                     $self->_writeline( "A", $count,
-                                        $lines[ $count ] );
+                                        $lines[$count] );
                                 }
                                 else {
                                     $self->_writeline( "A", $count );
@@ -461,7 +461,7 @@ sub _writeline {
     my $self = shift;
     my $file = $self->{filehandle};
     local $\ = $self->{output_record_separator};
-    print $file @_;
+    print( $file @_ );
     $self->{linecount}++;
 }
 
