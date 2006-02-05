@@ -49,7 +49,7 @@ my %account = (
     "X" => "tax",
     "A" => "note",
     "T" => "type",
-    'B' => "balance"
+    "B" => "balance"
 );
 
 my %category = (
@@ -88,7 +88,7 @@ my %security = (
     "N" => "security",
     "S" => "symbol",
     "T" => "type",
-    "G" => "goal"
+    "G" => "goal",
 );
 
 my %budget = (
@@ -113,7 +113,7 @@ my %payee = (
 
 my %prices = (
     "S" => "symbol",
-    "P" => "price",
+    "P" => "price"
 );
 
 my %price = (
@@ -154,11 +154,15 @@ sub new {
     $self->{input_record_separator}  ||= "\r";
     $self->{debug}                   ||= 0;
     $self->{linecount} = 0;
+
+    map( $self->{$_} = undef,    # initialize internally used variables
+        qw(_filehandle header currentheader reversemap reversesplitsmap) );
+
     bless( $self, $class );
     print( "File name: ", $self->{file}, "\n" ) if ( $self->{debug} );
 
     if ( $self->{file} ) {
-        $self->open();
+        $self->open;
     }
     return $self;
 }
@@ -171,16 +175,26 @@ sub file {
     return $self->{file};
 }
 
+sub _filehandle {
+    my $self = shift;
+    if ( $_[0] ) {
+        my $file = shift;
+        $self->{_filehandle} = IO::File->new($file)
+          or croak("Failed to open file '$file': $!");
+    }
+    if ( !$self->{_filehandle} ) {
+        croak("No filehandle available");
+    }
+    return $self->{_filehandle};
+}
+
 sub open {
     my $self = shift;
     if ( $_[0] ) {
-        file(shift);
+        $self->file(shift);
     }
-    if ( $self->{file} ) {
-        $self->{filehandle} = new IO::File $self->{file};
-        if ( !defined( $self->{filehandle} ) ) {
-            croak 'Failed to open file "' . $self->{file} . "\".";
-        }
+    if ( $self->file ) {
+        $self->_filehandle( $self->file );
     }
     else {
         croak "No file specified.";
@@ -191,14 +205,14 @@ sub next {
     my $self = shift;
     my %object;
     my $continue = 1;
-    if ( $self->{filehandle}->eof ) {
+    if ( $self->_filehandle->eof ) {
         return undef;
     }
     if ( exists( $self->{header} ) ) {
         $object{header} = $self->{header};
     }
-    while ( !$self->{filehandle}->eof && $continue ) {
-        my $line = $self->_getline();
+    while ( !$self->_filehandle->eof && $continue ) {
+        my $line = $self->_getline;
         next if ( $line =~ /^\s*$/ );
         my ( $field, $value ) = $self->_parseline($line);
         if ( $field eq '!' ) {
@@ -214,7 +228,8 @@ sub next {
             }
             else {
                 if ( !exists( $header{ $object{header} } ) ) {
-                    $self->_warning("Unknown header can't process line");
+                    $self->_warning(
+                        "Unknown header '$object{header}' can't process line");
                 }
                 elsif ( $object{header} eq "Type:Prices" ) {
                     $object{"symbol"} = $field;
@@ -299,7 +314,7 @@ sub _parseline {
 sub _getline {
     my $self = shift;
     local $/ = $self->{output_record_separator};
-    my $line = $self->{filehandle}->getline;
+    my $line = $self->_filehandle->getline;
     $self->{linecount}++;
     return $line;
 }
@@ -309,7 +324,7 @@ sub _warning {
     my $message = shift;
     carp(   $message
           . ' in file "'
-          . $self->{file}
+          . $self->file
           . '" line '
           . $self->{linecount} );
 }
@@ -317,9 +332,9 @@ sub _warning {
 sub header {
     my $self   = shift;
     my $header = shift;
-    my $file   = $self->{filehandle};
+    my $fh     = $self->_filehandle;
     local $\ = $self->{output_record_separator};
-    print( $file "!", $header );
+    print( $fh "!", $header );
 
     # used during write to validate passed record is appropriate for
     # current header also generate reverse lookup for mapping record
@@ -459,26 +474,26 @@ sub write {
 
 sub _writeline {
     my $self = shift;
-    my $file = $self->{filehandle};
+    my $fh   = $self->_filehandle;
     local $\ = $self->{output_record_separator};
-    print( $file @_ );
+    print( $fh @_ );
     $self->{linecount}++;
 }
 
 sub reset {
     my $self = shift;
-    $self->{filehandle}->seek( 0, 0 );
+    $self->_filehandle->seek( 0, 0 );
     $self->next;
 }
 
 sub close {
     my $self = shift;
-    $self->{filehandle}->close();
+    $self->_filehandle->close;
 }
 
 sub DESTROY {
     my $self = shift;
-    $self->close();
+    $self->close;
 }
 
 1;
@@ -495,7 +510,7 @@ Finance::QIF - Parse and create Quicken Interchange Format files
 
   my $qif = Finance::QIF->new( file => "test.qif" );
 
-  while ( my $record = $qif->next() ) {
+  while ( my $record = $qif->next ) {
       print( "Header: ", $record->{header}, "\n" );
       foreach my $key ( keys %{$record} ) {
           next
