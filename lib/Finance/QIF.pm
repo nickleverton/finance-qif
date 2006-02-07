@@ -149,19 +149,19 @@ my %header = (
 sub new {
     my $class = shift;
     my $self  = {@_};
+
+    $self->{debug}                   ||= 0;
     $self->{file}                    ||= "";
     $self->{output_record_separator} ||= "\r";
     $self->{input_record_separator}  ||= "\r";
-    $self->{debug}                   ||= 0;
     $self->{linecount} = 0;
 
     map( $self->{$_} = undef,    # initialize internally used variables
         qw(_filehandle header currentheader reversemap reversesplitsmap) );
-
     bless( $self, $class );
-    print( "File name: ", $self->{file}, "\n" ) if ( $self->{debug} );
 
     if ( $self->{file} ) {
+        print( "File name: ", $self->{file}, "\n" ) if ( $self->{debug} );
         $self->open;
     }
     return $self;
@@ -287,7 +287,6 @@ sub next {
 sub _parseline {
     my $self = shift;
     my $line = shift;
-    chop($line);
     my @result;
     if (   $line !~ /^!/
         && exists( $self->{header} )
@@ -313,8 +312,9 @@ sub _parseline {
 
 sub _getline {
     my $self = shift;
-    local $/ = $self->{output_record_separator};
+    local $/ = $self->{input_record_separator};
     my $line = $self->_filehandle->getline;
+    chomp($line);
     $self->{linecount}++;
     return $line;
 }
