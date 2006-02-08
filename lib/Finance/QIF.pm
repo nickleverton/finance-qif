@@ -107,6 +107,7 @@ my %payee = (
     "C" => "city",
     "S" => "state",
     "Z" => "zip",
+    "Y" => "country",
     "N" => "phone",
     "#" => "account"
 );
@@ -947,11 +948,6 @@ month.
 This is a list online payee accounts.  The following values are
 supported for online payee account records.
 
-Note: A common field for this type is identified by a "Y" however so
-far I have been unable to determine what that field represents.  As a
-result this software currently doesn't support it and will raise a
-warning when ever it is found.
-
 =over
 
 =item name
@@ -973,6 +969,10 @@ State of payee
 =item zip
 
 Zipcode of payee.
+
+=item country
+
+Country of payee.
 
 =item phone
 
@@ -1154,11 +1154,6 @@ Read an existing QIF file then write out to new QIF file.
 
   $in->close();
   $out->close();
-
-=head1 TODO
-
-Type:Payee is not complete.  Real exports from Quicken with this
-feature being used are required to complete support for this type.
 
 =head1 SEE ALSO
 
