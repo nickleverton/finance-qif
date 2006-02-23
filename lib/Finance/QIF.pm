@@ -508,9 +508,9 @@ Finance::QIF - Parse and create Quicken Interchange Format files
 =head1 SYNOPSIS
 
   use Finance::QIF;
-
+  
   my $qif = Finance::QIF->new( file => "test.qif" );
-
+  
   while ( my $record = $qif->next ) {
       print( "Header: ", $record->{header}, "\n" );
       foreach my $key ( keys %{$record} ) {
@@ -1150,7 +1150,7 @@ Read an existing QIF file then write out to new QIF file.
 
   my $in  = Finance::QIF->new( file => "input.qif" );
   my $out = Finance::QIF->new( file => ">write.qif" );
-
+  
   my $header = "";
   while ( my $record = $in->next() ) {
       if ( $header ne $record->{header} ) {
@@ -1159,7 +1159,7 @@ Read an existing QIF file then write out to new QIF file.
       }
       $out->write($record);
   }
-
+  
   $in->close();
   $out->close();
 
