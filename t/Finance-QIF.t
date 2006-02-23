@@ -10,8 +10,10 @@ BEGIN {
 }
 
 testfile( "Read ", "t/test.qif" );
-my $in  = Finance::QIF->new( file => "t/test.qif" );
-my $out = Finance::QIF->new( file => ">t/write.qif" );
+my $in  = Finance::QIF->new( file                    => "t/test.qif", 
+                             input_record_separator  => "\n" );
+my $out = Finance::QIF->new( file                    => ">t/write.qif",
+                             output_record_separator => "\n" );
 
 # Trap warning so we can validate message returned.
 $DOWARN = 0;
@@ -39,7 +41,8 @@ testfile( "Write ", "t/write.qif" );
 sub testfile {
     my $test = shift;
     my $file = shift;
-    my $qif  = Finance::QIF->new( file => $file );
+    my $qif  = Finance::QIF->new( file                   => $file,
+                                  input_record_separator => "\n" );
 
     # account tests
     {
