@@ -12,8 +12,10 @@ BEGIN {
 testfile( "Read ", "t/test.qif" );
 my $in  = Finance::QIF->new( file                    => "t/test.qif", 
                              input_record_separator  => "\n" );
+binmode $in->_filehandle;
 my $out = Finance::QIF->new( file                    => ">t/write.qif",
                              output_record_separator => "\n" );
+binmode $out->_filehandle;
 
 # Trap warning so we can validate message returned.
 $DOWARN = 0;
@@ -43,6 +45,7 @@ sub testfile {
     my $file = shift;
     my $qif  = Finance::QIF->new( file                   => $file,
                                   input_record_separator => "\n" );
+    binmode $qif->_filehandle();
 
     # account tests
     {
