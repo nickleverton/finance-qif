@@ -1066,7 +1066,10 @@ Can be used to redefine the QIF output record separator.
 
   my $out = Finance::QIF->new( output_record_separator => "\n" );
 
-Note: For MacOS X it will most likely be necessary to change this to "\r". Quicken on MacOS X generates files with "\r" as the seperator which is typical of Mac however the native perl in MacOS X is unix based and uses the default unix seperator which is "\n".
+Note: For MacOS X it will most likely be necessary to change this to
+"\r". Quicken on MacOS X generates files with "\r" as the seperator
+which is typical of Mac however the native perl in MacOS X is unix
+based and uses the default unix seperator which is "\n".
 
 =item input_record_separator
 
@@ -1074,7 +1077,10 @@ Can be used to redefine the QIF input record separator.
 
   my $in = Finance::QIF->new( input_record_separator => "\n" );
 
-Note: For MacOS X it will most likely be necessary to change this to "\r". Quicken on MacOS X generates files with "\r" as the seperator which is typical of Mac however the native perl in MacOS X is unix based and uses the default unix seperator which is "\n".
+Note: For MacOS X it will most likely be necessary to change this to
+"\r". Quicken on MacOS X generates files with "\r" as the seperator
+which is typical of Mac however the native perl in MacOS X is unix
+based and uses the default unix seperator which is "\n".
 
 =item debug
 
