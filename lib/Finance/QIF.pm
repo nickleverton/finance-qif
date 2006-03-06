@@ -282,7 +282,12 @@ sub next {
             }
         }
     }
-    return \%object;
+    # Must check that we have a valid record to return
+    if (scalar(keys %object) > 1) {
+      return \%object;
+    } else {
+      return undef;
+    }
 }
 
 sub _parseline {
