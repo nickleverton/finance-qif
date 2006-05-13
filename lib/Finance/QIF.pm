@@ -12,8 +12,8 @@ $VERSION = eval $VERSION;
 my %noninvestment = (
     "D" => "date",
     "T" => "amount",
-    "U" => "total",     #Quicken 2005 added this which is usually the same as
-                        #as T but can sometimes be higher.
+    "U" => "total",      #Quicken 2005 added this which is usually the same as
+                         #as T but can sometimes be higher.
     "C" => "status",
     "N" => "number",
     "P" => "payee",
@@ -36,8 +36,8 @@ my %investment = (
     "I" => "price",
     "Q" => "quantity",
     "T" => "transaction",
-    "U" => "total",     #Quicken 2005 added this which is usually the same as
-                        #as T but can sometimes be higher.
+    "U" => "total",        #Quicken 2005 added this which is usually the same as
+                           #as T but can sometimes be higher.
     "C" => "status",
     "P" => "text",
     "M" => "memo",
@@ -153,21 +153,21 @@ my %header = (
 
 sub new {
     my $class = shift;
-    my $self  = {@_};
+    my %opt   = @_;
+    my $self  = {};
 
-    $self->{debug}                   ||= 0;
-    $self->{file}                    ||= "";
-    $self->{input_record_separator}  ||= $/;
-    $self->{output_record_separator} ||= $\;
-    $self->{trim_white_space}        ||= 0;
-    $self->{linecount} = 0;
+    $self->{debug}                   = $opt{debug}                   || 0;
+    $self->{input_record_separator}  = $opt{input_record_separator}  || $/;
+    $self->{output_record_separator} = $opt{output_record_separator} || $\;
 
     map( $self->{$_} = undef,    # initialize internally used variables
-        qw(_filehandle header currentheader reversemap reversesplitsmap) );
+        qw(_linecount header currentheader reversemap reversesplitsmap trim_white_space)
+    );
+
     bless( $self, $class );
 
-    if ( $self->{file} ) {
-        print( "File name: ", $self->{file}, "\n" ) if ( $self->{debug} );
+    if ( $opt{file} ) {
+        $self->file( $opt{file} );
         $self->open;
     }
     return $self;
@@ -175,18 +175,25 @@ sub new {
 
 sub file {
     my $self = shift;
-    if ( $_[0] ) {
-        $self->{file} = shift;
+    if (@_) {
+        my @file = ( ref( $_[0] ) eq "ARRAY" ? @{ shift @_ } : (), @_ );
+        $self->{file} = [@file];
     }
-    return $self->{file};
+    if ( $self->{file} ) {
+        return wantarray ? @{ $self->{file} } : $self->{file}->[0];
+    }
+    else {
+        return undef;
+    }
 }
 
 sub _filehandle {
     my $self = shift;
-    if ( $_[0] ) {
-        my $file = shift;
-        $self->{_filehandle} = IO::File->new($file)
-          or croak("Failed to open file '$file': $!");
+    if (@_) {
+        my @args = @_;
+        $self->{_filehandle} = IO::File->new(@args)
+          or croak("Failed to open file '$args[0]': $!");
+        $self->{_linecount} = 0;
     }
     if ( !$self->{_filehandle} ) {
         croak("No filehandle available");
@@ -196,14 +203,14 @@ sub _filehandle {
 
 sub open {
     my $self = shift;
-    if ( $_[0] ) {
-        $self->file(shift);
+    if (@_) {
+        $self->file(@_);
     }
     if ( $self->file ) {
         $self->_filehandle( $self->file );
     }
     else {
-        croak "No file specified.";
+        croak("No file specified");
     }
 }
 
@@ -226,7 +233,7 @@ sub next {
             $self->{header} = $value;
             $object{header} = $value;
             if ( !exists( $header{$value} ) ) {
-                $self->_warning( 'Unknown header format "' . $value . '"' );
+                $self->_warning("Unknown header format '$value'");
             }
         }
         else {
@@ -298,7 +305,7 @@ sub next {
                     $object{ $header{ $object{header} }{$field} } = $value;
                 }
                 else {
-                    $self->_warning( 'Unknown field "' . $field . '"' );
+                    $self->_warning("Unknown field '$field'");
                 }
             }
         }
@@ -335,9 +342,8 @@ sub _parseline {
     else {
         $result[0] = substr( $line, 0, 1 );
         $result[1] = substr( $line, 1 );
-        if ($self->{trim_white_space})
-        {
-          $result[1]=~s/^\s*(.*?)\s*$/$1/;
+        if ( $self->{trim_white_space} ) {
+            $result[1] =~ s/^\s*(.*?)\s*$/$1/;
         }
     }
     return @result;
@@ -348,7 +354,7 @@ sub _getline {
     local $/ = $self->{input_record_separator};
     my $line = $self->_filehandle->getline;
     chomp($line);
-    $self->{linecount}++;
+    $self->{_linecount}++;
     return $line;
 }
 
@@ -356,10 +362,10 @@ sub _warning {
     my $self    = shift;
     my $message = shift;
     carp(   $message
-          . ' in file "'
+          . " in file '"
           . $self->file
-          . '" line '
-          . $self->{linecount} );
+          . "' line "
+          . $self->{_linecount} );
 }
 
 sub header {
@@ -382,9 +388,9 @@ sub header {
         }
     }
 
-    $self->{linecount}++;
+    $self->{_linecount}++;
     if ( !exists( $header{$header} ) ) {
-        $self->_warning( 'Unsuppored header "' . $header . '" writen to file' );
+        $self->_warning("Unsupported header '$header' written to file");
     }
 }
 
@@ -412,13 +418,13 @@ sub write {
                         );
                     }
                     else {
-                        $self->_warning('Prices missing a required field');
+                        $self->_warning("Prices missing a required field");
                     }
                 }
                 $self->_writeline("^");
             }
             else {
-                $self->_warning('Record missing "symbol" or "prices"');
+                $self->_warning("Record missing 'symbol' or 'prices'");
             }
         }
         else {
@@ -469,8 +475,8 @@ sub write {
                     }
                 }
                 else {
-                    $self->_warning( 'Unsupported field "' . $value
-                          . '" found in record ignored' );
+                    $self->_warning( "Unsupported field '$value'"
+                          . " found in record ignored" );
                 }
             }
             if ( exists( $record->{splits} ) ) {
@@ -493,11 +499,11 @@ sub write {
         }
     }
     else {
-        $self->_warning( 'Record header type "'
+        $self->_warning( "Record header type '"
               . $record->{header}
-              . '" does not match current output header type '
+              . "' does not match current output header type "
               . $self->{currentheader}
-              . '.' );
+              . "." );
     }
 }
 
@@ -506,7 +512,7 @@ sub _writeline {
     my $fh   = $self->_filehandle;
     local $\ = $self->{output_record_separator};
     print( $fh @_ );
-    $self->{linecount}++;
+    $self->{_linecount}++;
 }
 
 sub reset {
@@ -518,11 +524,6 @@ sub reset {
 sub close {
     my $self = shift;
     $self->_filehandle->close;
-}
-
-sub DESTROY {
-    my $self = shift;
-    $self->close;
 }
 
 1;
@@ -1088,17 +1089,19 @@ If the file is specified it will be opened on new.
 
 =item file
 
-Specifies file to use for processing.
+Specifies file to use for processing.  See L</file()> for details.
 
   my $in = Finance::QIF->new( file => "myfile" );
+OR
+  my $in = Finance::IIF->new( file => [ "myfile", "<:crlf" ] );
 
-For output files must include ">" with file name.
+For output files, be sure to open the file in write mode.  For example:
 
   my $out = Finance::QIF->new( file => ">myfile" );
 
 =item input_record_separator
 
-Can be used to redefine the QIF input record separator.
+Can be used to redefine the QIF input record separator.  Default is $/.
 
   my $in = Finance::QIF->new( input_record_separator => "\n" );
 
@@ -1109,7 +1112,7 @@ based and uses the default unix separator which is "\n".
 
 =item output_record_separator
 
-Can be used to redefine the QIF output record separator.
+Can be used to redefine the QIF output record separator.  Default is $\.
 
   my $out = Finance::QIF->new( output_record_separator => "\n" );
 
@@ -1120,7 +1123,8 @@ based and uses the default unix separator which is "\n".
 
 =item trim_white_space
 
-Can be used to remove leading and trailing white space from values returned. Default is "0".
+Can be used to remove leading and trailing white space from values
+returned. Default is "0".
 
   my $qif = Finance::QIF->new( trim_white_space => 1 );
 
@@ -1132,14 +1136,22 @@ Can be used to output debug information.  Default is "0".
 
 =back
 
-=head2 file()
+=head2 file( <IO::File->new arguments> )
 
-Specify file name to use.  For output files must include ">" with
-name.
+Specify file name and optionally additional parameters that will be
+used to obtain a filehandle.  The argument can be a filename (SCALAR)
+an ARRAY reference or an ARRAY whose values must be valid arguments
+for passing to IO::File->new.
 
-  $qif->file("myfile");
+  $iif->file("myfile");
+ OR
+  $iif->file( [ "myfile", "<:crlf" ] );
+ OR
+  $iif->file( "myfile", "<:crlf" );
 
-=head2 open()
+For output files, be sure to open the file in write mode.
+
+=head2 open( [IO::File->new arguments] )
 
 Open already specified file.
 
