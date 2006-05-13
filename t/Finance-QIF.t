@@ -1,4 +1,12 @@
-use Test::More tests => 883;
+#!/usr/bin/perl
+# Before `make install' is performed this script should be runnable with
+# `make test'. After `make install' it should work as `perl Finance-IIF.t'
+
+use strict;
+use warnings;
+use Test::More tests => 909;
+
+my $DOWARN;
 
 BEGIN {
 
@@ -6,21 +14,105 @@ BEGIN {
         $SIG{"__WARN__"} = sub { warn $_[0] if $DOWARN }
     }
     $DOWARN = 1;
-    use_ok('Finance::QIF');
+    use_ok('Finance::QIF') or exit;
 }
 
-testfile( "Read ", "t/test.qif" );
-my $in  = Finance::QIF->new( file                    => "t/test.qif", 
-                             input_record_separator  => "\n" );
+my $package  = "Finance::QIF";
+my $testfile = "t/test.qif";
+
+{    # new
+    can_ok( $package, qw(new) );
+
+    my $obj = $package->new;
+    isa_ok( $obj, $package );
+
+    is( $obj->{debug}, 0, "default debug value" );
+    is( $obj->{input_record_separator}, $/, "default input record separator" );
+    is( $obj->{output_record_separator}, $\,
+        "default output record separator" );
+
+    $obj = $package->new(
+        debug                   => 1,
+        input_record_separator  => "X\rX\n",
+        output_record_separator => "X\rX\n"
+    );
+
+    is( $obj->{debug}, 1, "custom debug value" );
+    is( $obj->{input_record_separator},
+        "X\rX\n", "custom input record separator" );
+    is( $obj->{output_record_separator},
+        "X\rX\n", "custom output record separator" );
+}
+
+{    # file
+    can_ok( $package, qw(file) );
+
+    my $obj = $package->new;
+
+    is( $obj->file, undef, "file undef by default" );
+    is( $obj->file($testfile), $testfile, "file with one arg" );
+    is( $obj->file( $testfile, "<" ), $testfile, "file with two args" );
+
+    $obj = $package->new( file => $testfile );
+    is( $obj->file, $testfile, "new with scalar file argument" );
+
+    $obj = $package->new( file => [ $testfile, "<:crlf" ] );
+    is( $obj->file, $testfile, "new with arrayref file argument" );
+
+    is_deeply( [ $obj->file( 1, 2 ) ], [ 1, 2 ], "file returns list" );
+}
+
+{    # croak checks for: _filehandle next _getline reset close
+    my @methods = qw(_filehandle next _getline reset close);
+    can_ok( $package, @methods );
+
+    foreach my $method (@methods) {
+        my $obj = $package->new;
+        eval { $obj->$method };
+        like(
+            $@,
+            qr/^No filehandle available/,
+            "$method without a filehandle croaks"
+        );
+    }
+}
+
+{    # open
+    can_ok( $package, qw(open) );
+
+    my $obj = $package->new;
+    eval { $obj->open };
+    like( $@, qr/^No file specified/, "open without a file croaks" );
+
+    $obj = $package->new;
+    is( ref $obj->open($testfile), "IO::File", "open returns IO::File object" );
+}
+
+{    # _parseline
+    can_ok( $package, qw(_parseline) );
+}
+
+{    # _warning
+    can_ok( $package, qw(_warning) );
+}
+
+testfile( "Read ", $testfile );
+my $in = $package->new(
+    file                   => $testfile,
+    input_record_separator => "\n"
+);
 binmode $in->_filehandle;
-my $out = Finance::QIF->new( file                    => ">t/write.qif",
-                             output_record_separator => "\n" );
+my $out = $package->new(
+    file                    => ">t/write.qif",
+    output_record_separator => "\n"
+);
 binmode $out->_filehandle;
 
 # Trap warning so we can validate message returned.
 $DOWARN = 0;
+
 # need to create a test that intentionally causes a warning so we can validate
-# warnings are always working properly 
+# warnings are always working properly
 # turn warnings back on
 $DOWARN = 1;
 
@@ -43,8 +135,10 @@ testfile( "Write ", "t/write.qif" );
 sub testfile {
     my $test = shift;
     my $file = shift;
-    my $qif  = Finance::QIF->new( file                   => $file,
-                                  input_record_separator => "\n" );
+    my $qif  = $package->new(
+        file                   => $file,
+        input_record_separator => "\n"
+    );
     binmode $qif->_filehandle();
 
     # account tests
@@ -271,7 +365,7 @@ sub testfile {
         ok( $record->{total}    eq "-100.00",   $test . "Bank" );
         ok( $record->{address}  eq "",          $test . "Bank" );
         ok( $record->{category} eq "Groceries", $test . "Bank" );
-        $qif->{trim_white_space}=1;
+        $qif->{trim_white_space} = 1;
         $record = $qif->next();
         ok( $record->{header}   eq "Type:Bank", $test . "Bank" );
         ok( $record->{date}     eq "3/17/06",   $test . "Bank" );
@@ -281,7 +375,7 @@ sub testfile {
         ok( $record->{total}    eq "-100.00",   $test . "Bank" );
         ok( $record->{address}  eq "",          $test . "Bank" );
         ok( $record->{category} eq "Groceries", $test . "Bank" );
-        $qif->{trim_white_space}=0;
+        $qif->{trim_white_space} = 0;
     }
 
     # Cash test
