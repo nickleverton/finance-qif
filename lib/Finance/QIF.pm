@@ -208,9 +208,11 @@ sub _filehandle {
       $self->{_filehandle}->sysread($buffer,2);
       if ($buffer eq "\r\n") {
         $self->{record_separator}="\r\n";
-      } elsif ($buffer =~ "\n$") {
+      }
+      elsif ($buffer =~ /\n$/) {
         $self->{record_separator}="\n";
-      } elsif ($buffer =~ "\r$") {
+      }
+      elsif ($buffer =~ /\r$/) {
         $self->{record_separator}="\r";
       }
       $self->{_filehandle}->seek( 0, 0 );
