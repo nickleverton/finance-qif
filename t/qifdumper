@@ -1,7 +1,12 @@
 use Finance::QIF;
 
+if ($#ARGV != 0) {
+  print STDERR "USAGE: qifdumper <inputfile>\n";
+  exit;
+}
+
 my $qif=Finance::QIF->new(file                    => $ARGV[0],
-                          input_record_separator  => "\n" );
+                          autodetect  => 1 );
 
 while (my $record=$qif->next()) {
   print "Header: ".$record->{header}."\n";

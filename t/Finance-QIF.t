@@ -4,7 +4,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 920;
+use Test::More tests => 925;
 
 my $DOWARN;
 
@@ -164,7 +164,7 @@ my $in = $package->new(
 );
 binmode $in->_filehandle;
 my $out = $package->new(
-    file             => ">t/write.qif",
+    file             => ">".$tempfile,
     record_separator => $in->record_separator
 );
 binmode $out->_filehandle;
@@ -188,7 +188,33 @@ while ( my $record = $in->next() ) {
 
 $in->close();
 $out->close();
-testfile( "Write ", "t/write.qif" );
+testfile( "Write ", $tempfile );
+unlink($tempfile);
+
+#test default write/write works
+$out = $package->new(
+    file             => ">".$tempfile,
+);
+my $record={header    =>  "Type:Security",
+            security  =>  "Intuit",
+            symbol    =>  "INTU",
+            type      =>  "Stock",
+            goal      =>  "High Risk"};
+$out->header($record->{header});
+$out->write($record);
+$out->close();
+$in = $package->new(
+    file             => $tempfile,
+);
+my $record = $in->next();
+ok( $record->{header}      eq "Type:Security",     "default write/read" );
+ok( $record->{security}    eq "Intuit",            "default write/read" );
+ok( $record->{symbol}      eq "INTU",              "default write/read" );
+ok( $record->{type}        eq "Stock",             "default write/read" );
+ok( $record->{goal}        eq "High Risk",         "default write/read" );
+unlink($tempfile);
+
+
 
 # Need a test for confirming we don't interfere with other open files
 # reading input with different line separator.
