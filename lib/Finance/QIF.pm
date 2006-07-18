@@ -157,8 +157,10 @@ sub new {
     my $self  = {};
 
     $self->{debug}                   = $opt{debug}                   || 0;
-    $self->{input_record_separator}  = $opt{input_record_separator}  || $/;
-    $self->{output_record_separator} = $opt{output_record_separator} || $\;
+    $self->{autodetect}              = $opt{autodetect}              || 0;
+    $self->{record_separator}        = $opt{record_separator}        || 
+                                       $opt{input_record_separator}  ||
+                                       $opt{output_record_separator} || $/;
 
     map( $self->{$_} = undef,    # initialize internally used variables
         qw(_linecount header currentheader reversemap reversesplitsmap trim_white_space)
@@ -187,6 +189,11 @@ sub file {
     }
 }
 
+sub record_separator {
+  my $self=shift;
+  return $self->{record_seperator};
+}
+
 sub _filehandle {
     my $self = shift;
     if (@_) {
@@ -194,6 +201,19 @@ sub _filehandle {
         $self->{_filehandle} = IO::File->new(@args)
           or croak("Failed to open file '$args[0]': $!");
         $self->{_linecount} = 0;
+    }
+    if ($self->{autodetect}) {
+      $self->{_filehandle}->seek(-2,2); 
+      my $buffer="";
+      $self->{_filehandle}->sysread($buffer,2);
+      if ($buffer eq "\r\n") {
+        $self->{record_separator}="\r\n";
+      } elsif ($buffer =~ "\n$") {
+        $self->{record_separator}="\n";
+      } elsif ($buffer =~ "\r$") {
+        $self->{record_separator}="\r";
+      }
+      $self->{_filehandle}->seek( 0, 0 );
     }
     if ( !$self->{_filehandle} ) {
         croak("No filehandle available");
@@ -351,7 +371,7 @@ sub _parseline {
 
 sub _getline {
     my $self = shift;
-    local $/ = $self->{input_record_separator};
+    local $/ = $self->{record_separator};
     my $line = $self->_filehandle->getline;
     chomp($line);
     $self->{_linecount}++;
@@ -372,7 +392,7 @@ sub header {
     my $self   = shift;
     my $header = shift;
     my $fh     = $self->_filehandle;
-    local $\ = $self->{output_record_separator};
+    local $\ = $self->{record_separator};
     print( $fh "!", $header );
 
     # used during write to validate passed record is appropriate for
@@ -510,7 +530,7 @@ sub write {
 sub _writeline {
     my $self = shift;
     my $fh   = $self->_filehandle;
-    local $\ = $self->{output_record_separator};
+    local $\ = $self->{record_separator};
     print( $fh @_ );
     $self->{_linecount}++;
 }
@@ -1099,27 +1119,47 @@ For output files, be sure to open the file in write mode.  For example:
 
   my $out = Finance::QIF->new( file => ">myfile" );
 
-=item input_record_separator
+=item record_separator
 
-Can be used to redefine the QIF input record separator.  Default is $/.
+Can be used to redefine the QIF record separator.  Default is $/.
 
-  my $in = Finance::QIF->new( input_record_separator => "\n" );
-
-Note: For MacOS X it will most likely be necessary to change this to
-"\r". Quicken on MacOS X generates files with "\r" as the separator
-which is typical of Mac however the native perl in MacOS X is unix
-based and uses the default unix separator which is "\n".
-
-=item output_record_separator
-
-Can be used to redefine the QIF output record separator.  Default is $\.
-
-  my $out = Finance::QIF->new( output_record_separator => "\n" );
+  my $in = Finance::QIF->new( record_separator => "\n" );
 
 Note: For MacOS X it will most likely be necessary to change this to
 "\r". Quicken on MacOS X generates files with "\r" as the separator
 which is typical of Mac however the native perl in MacOS X is unix
 based and uses the default unix separator which is "\n".
+
+=item input_record_separator DEPRECIATED use record_separator
+
+  will not be supported next release
+
+=item output_record_separator DEPRECIATED use record_separator
+
+  will not be supported next release
+
+=item auto_detect
+
+Enable auto detection of the record separator based on the file
+contents. Default is "0".
+
+Perl uses $/ to define line separators for text files. Perl sets this value
+according to the OS perl is running on:
+
+  Windows="\r\n"
+  Mac="\r"
+  Unix="\n"
+
+In many cases you may find your self with text files that do not match the OS.
+In these cases Finance::QIF by default  will not process that qif file
+correctly. This feature is an attempt to help with the most common cases of
+having the wrong text file for the OS Finance::QIF is running on.
+
+This feature depends on being able to seek to the end of the file and reading
+the last 2 char's to determine the proper seperator. If a seek can not be
+performed or the last 2 char's are not a proper separator the record_separator
+will default to $/ or the value passed in. If a valid record_separator is
+found then it will be set according to what was in the file.
 
 =item trim_white_space
 
@@ -1150,6 +1190,14 @@ for passing to IO::File->new.
   $iif->file( "myfile", "<:crlf" );
 
 For output files, be sure to open the file in write mode.
+
+=head2 record_separator
+
+Returns the curently used record_separator. This is used primarly in situations where you open a qif file with autodetect and then want to write out a qif file in the same format.
+
+  my $in  = Finance::QIF->new( file => "input.qif", autodetect=>1 );
+  my $out = Finance::QIF->new( file => ">write.qif",
+                               record_separator=>$in->record_separator() );
 
 =head2 open( [IO::File->new arguments] )
 
