@@ -6,7 +6,7 @@ use warnings;
 use Carp;
 use IO::File;
 
-our $VERSION = '2.03';
+our $VERSION = '2.04';
 $VERSION = eval $VERSION;
 
 my %noninvestment = (
@@ -211,27 +211,23 @@ sub open {
         $self->file(@_);
     }
     if ( $self->file ) {
+        $self->_filehandle( $self->file );
         if ($self->{autodetect}) {
-          $self->_filehandle( $self->file );
-          $self->_filehandle->seek(-2,2); 
-          my $buffer="";
-          $self->_filehandle->sysread($buffer,2);
-          if ($buffer eq "\r\n") {
-            $self->{record_separator}="\r\n";
-          }
-          elsif ($buffer =~ /\n$/) {
-            $self->{record_separator}="\n";
-          }
-          elsif ($buffer =~ /\r$/) {
-            $self->{record_separator}="\r";
+          if ($self->_filehandle->seek(-2,2)) {
+            my $buffer="";
+            $self->_filehandle->read($buffer,2);
+            if ($buffer eq "\r\n") {
+              $self->{record_separator}="\r\n";
+            }
+            elsif ($buffer =~ /\n$/) {
+              $self->{record_separator}="\n";
+            }
+            elsif ($buffer =~ /\r$/) {
+              $self->{record_separator}="\r";
+            }
           }
         }
-
-        map( $self->{$_} = undef,    # initialize internally used variables
-             qw(_linecount header currentheader reversemap reversesplitsmap)
-        );
-
-        $self->_filehandle( $self->file );
+        $self->reset();
     }
     else {
         croak("No file specified");
@@ -541,7 +537,10 @@ sub _writeline {
 
 sub reset {
     my $self = shift;
-    $self->open();
+    map( $self->{$_} = undef,    # initialize internally used variables
+         qw(_linecount header currentheader reversemap reversesplitsmap)
+    );
+    $self->_filehandle->seek(0,0);
 }
 
 sub close {
@@ -1116,7 +1115,7 @@ Specifies file to use for processing.  See L</file()> for details.
 
   my $in = Finance::QIF->new( file => "myfile" );
 OR
-  my $in = Finance::IIF->new( file => [ "myfile", "<:crlf" ] );
+  my $in = Finance::QIF->new( file => [ "myfile", "<:crlf" ] );
 
 For output files, be sure to open the file in write mode.  For example:
 
@@ -1186,11 +1185,11 @@ used to obtain a filehandle.  The argument can be a filename (SCALAR)
 an ARRAY reference or an ARRAY whose values must be valid arguments
 for passing to IO::File->new.
 
-  $iif->file("myfile");
+  $qif->file("myfile");
  OR
-  $iif->file( [ "myfile", "<:crlf" ] );
+  $qif->file( [ "myfile", "<:crlf" ] );
  OR
-  $iif->file( "myfile", "<:crlf" );
+  $qif->file( "myfile", "<:crlf" );
 
 For output files, be sure to open the file in write mode.
 
