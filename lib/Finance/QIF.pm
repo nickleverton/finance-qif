@@ -158,13 +158,10 @@ sub new {
 
     $self->{debug}                   = $opt{debug}                   || 0;
     $self->{autodetect}              = $opt{autodetect}              || 0;
+    $self->{trim_white_space}        = $opt{trim_white_space}        || 0;
     $self->{record_separator}        = $opt{record_separator}        || 
                                        $opt{input_record_separator}  ||
                                        $opt{output_record_separator} || $/;
-
-    map( $self->{$_} = undef,    # initialize internally used variables
-        qw(_linecount header currentheader reversemap reversesplitsmap trim_white_space)
-    );
 
     bless( $self, $class );
 
@@ -191,7 +188,7 @@ sub file {
 
 sub record_separator {
   my $self=shift;
-  return $self->{record_seperator};
+  return $self->{record_separator};
 }
 
 sub _filehandle {
@@ -201,21 +198,6 @@ sub _filehandle {
         $self->{_filehandle} = IO::File->new(@args)
           or croak("Failed to open file '$args[0]': $!");
         $self->{_linecount} = 0;
-    }
-    if ($self->{autodetect}) {
-      $self->{_filehandle}->seek(-2,2); 
-      my $buffer="";
-      $self->{_filehandle}->sysread($buffer,2);
-      if ($buffer eq "\r\n") {
-        $self->{record_separator}="\r\n";
-      }
-      elsif ($buffer =~ /\n$/) {
-        $self->{record_separator}="\n";
-      }
-      elsif ($buffer =~ /\r$/) {
-        $self->{record_separator}="\r";
-      }
-      $self->{_filehandle}->seek( 0, 0 );
     }
     if ( !$self->{_filehandle} ) {
         croak("No filehandle available");
@@ -229,6 +211,26 @@ sub open {
         $self->file(@_);
     }
     if ( $self->file ) {
+        if ($self->{autodetect}) {
+          $self->_filehandle( $self->file );
+          $self->_filehandle->seek(-2,2); 
+          my $buffer="";
+          $self->_filehandle->sysread($buffer,2);
+          if ($buffer eq "\r\n") {
+            $self->{record_separator}="\r\n";
+          }
+          elsif ($buffer =~ /\n$/) {
+            $self->{record_separator}="\n";
+          }
+          elsif ($buffer =~ /\r$/) {
+            $self->{record_separator}="\r";
+          }
+        }
+
+        map( $self->{$_} = undef,    # initialize internally used variables
+             qw(_linecount header currentheader reversemap reversesplitsmap)
+        );
+
         $self->_filehandle( $self->file );
     }
     else {
@@ -539,8 +541,7 @@ sub _writeline {
 
 sub reset {
     my $self = shift;
-    $self->_filehandle->seek( 0, 0 );
-    $self->next;
+    $self->open();
 }
 
 sub close {
@@ -1158,7 +1159,7 @@ correctly. This feature is an attempt to help with the most common cases of
 having the wrong text file for the OS Finance::QIF is running on.
 
 This feature depends on being able to seek to the end of the file and reading
-the last 2 char's to determine the proper seperator. If a seek can not be
+the last 2 char's to determine the proper separator. If a seek can not be
 performed or the last 2 char's are not a proper separator the record_separator
 will default to $/ or the value passed in. If a valid record_separator is
 found then it will be set according to what was in the file.
