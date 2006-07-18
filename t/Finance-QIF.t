@@ -4,7 +4,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 909;
+use Test::More tests => 920;
 
 my $DOWARN;
 
@@ -19,29 +19,90 @@ BEGIN {
 
 my $package  = "Finance::QIF";
 my $testfile = "t/test.qif";
+my $tempfile = "t/temp.qif";
 
 {    # new
     can_ok( $package, qw(new) );
 
     my $obj = $package->new;
     isa_ok( $obj, $package );
-
     is( $obj->{debug}, 0, "default debug value" );
-    is( $obj->{input_record_separator}, $/, "default input record separator" );
-    is( $obj->{output_record_separator}, $\,
-        "default output record separator" );
+    is( $obj->{autodetect}, 0, "default autodetect value" );
+    is( $obj->record_separator(), $/, "default record separator" );
 
     $obj = $package->new(
         debug                   => 1,
-        input_record_separator  => "X\rX\n",
+        record_separator        => "X\rX\n"
+    );
+    is( $obj->{debug}, 1, "custom debug value" );
+    is( $obj->record_separator(),
+        "X\rX\n", "custom record separator" );
+
+    $obj = $package->new(
+        input_record_separator => "X\rX\n"
+    );
+    is( $obj->record_separator(),
+        "X\rX\n", "custom input record separator" );
+
+    $obj = $package->new(
         output_record_separator => "X\rX\n"
     );
-
-    is( $obj->{debug}, 1, "custom debug value" );
-    is( $obj->{input_record_separator},
-        "X\rX\n", "custom input record separator" );
-    is( $obj->{output_record_separator},
+    is( $obj->record_separator(),
         "X\rX\n", "custom output record separator" );
+}
+
+{    # autodetect
+
+    my $temp=IO::File->new(">".$tempfile);
+    $temp->close();
+    my $obj = $package->new(file=>$tempfile,autodetect=>1);
+    is( $obj->record_separator(), $/, "autodetect default record separator" );
+
+    $temp=IO::File->new(">".$tempfile);
+    print($temp  "Testing Windows\r\n");
+    $temp->close();
+    $obj = $package->new(file=>$tempfile,autodetect=>1);
+    is( $obj->record_separator(), "\r\n", 
+        "autodetect windows record separator" );
+
+    $temp=IO::File->new(">".$tempfile);
+    print($temp "Testing Mac\r");
+    $temp->close();
+    $obj = $package->new(file=>$tempfile,autodetect=>1);
+    is( $obj->record_separator(), "\r", 
+        "autodetect mac record separator" );
+
+    $temp=IO::File->new(">".$tempfile);
+    print($temp "Testing Unix\n");
+    $temp->close();
+    $obj = $package->new(file=>$tempfile,autodetect=>1);
+    is( $obj->record_separator(), "\n", 
+        "autodetect unix record separator" );
+
+    unlink($tempfile); 
+}
+
+{    # reset
+    can_ok( $package, qw(reset) );
+
+    my $obj = $package->new;
+    eval { $obj->reset };
+    like( $@, qr/^No file specified/, "reset without a file croaks" );
+
+    my $temp=IO::File->new(">".$tempfile);
+    print($temp "!Type:Security\nNIntuit\nSINTU\nTStock\nGHigh Risk\n^\n");
+    $temp->close();
+
+    $obj = $package->new(file=>$tempfile,autodetect=>1);
+    my $record1 = $obj->next();
+    $obj->reset();
+    my $record2 = $obj->next();
+
+    ok( $record1->{header}      eq $record2->{header},     "reset" );
+    ok( $record1->{security}    eq $record2->{security},   "reset" );
+    ok( $record1->{symbol}      eq $record2->{symbol},     "reset" );
+    ok( $record1->{type}        eq $record2->{type},       "reset" );
+    ok( $record1->{goal}        eq $record2->{goal},       "reset" );
 }
 
 {    # file
@@ -62,8 +123,8 @@ my $testfile = "t/test.qif";
     is_deeply( [ $obj->file( 1, 2 ) ], [ 1, 2 ], "file returns list" );
 }
 
-{    # croak checks for: _filehandle next _getline reset close
-    my @methods = qw(_filehandle next _getline reset close);
+{    # croak checks for: _filehandle next _getline close
+    my @methods = qw(_filehandle next _getline close);
     can_ok( $package, @methods );
 
     foreach my $method (@methods) {
@@ -98,13 +159,13 @@ my $testfile = "t/test.qif";
 
 testfile( "Read ", $testfile );
 my $in = $package->new(
-    file                   => $testfile,
-    input_record_separator => "\n"
+    file             => $testfile,
+    autodetect       => 1
 );
 binmode $in->_filehandle;
 my $out = $package->new(
-    file                    => ">t/write.qif",
-    output_record_separator => "\n"
+    file             => ">t/write.qif",
+    record_separator => $in->record_separator
 );
 binmode $out->_filehandle;
 
@@ -130,14 +191,14 @@ $out->close();
 testfile( "Write ", "t/write.qif" );
 
 # Need a test for confirming we don't interfere with other open files
-# reading input with different line seperator.
+# reading input with different line separator.
 
 sub testfile {
     my $test = shift;
     my $file = shift;
     my $qif  = $package->new(
         file                   => $file,
-        input_record_separator => "\n"
+        record_separator => "\n"
     );
     binmode $qif->_filehandle();
 
