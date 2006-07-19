@@ -644,7 +644,7 @@ Dollar amount of transaction.
 
 =item total
 
-Dollar amount of transaction. This is gnerally the same as amount but
+Dollar amount of transaction. This is generally the same as amount but
 in some cases can be higher. (Introduced in Quicken 2005 for windows)
 
 =item status
@@ -752,7 +752,7 @@ Dollar amount of transaction.
 
 =item total
 
-Dollar amount of transaction. This is gnerally the same as amount but
+Dollar amount of transaction. This is generally the same as amount but
 in some cases can be higher. (Introduced in Quicken 2005 for windows)
 
 =back
@@ -1155,18 +1155,18 @@ value according to the OS perl is running on:
   Mac="\r"
   Unix="\n"
 
-In many cases you may find your self with text files that do not match
+In many cases you may find yourself with text files that do not match
 the OS.  In these cases Finance::QIF by default will not process that
-qif file correctly. This feature is an attempt to help with the most
+QIF file correctly. This feature is an attempt to help with the most
 common cases of having the wrong text file for the OS Finance::QIF is
 running on.
 
 This feature depends on being able to seek to the end of the file and
-reading the last 2 char's to determine the proper separator. If a seek
-can not be performed or the last 2 char's are not a proper separator
-the record_separator will default to $/ or the value passed in. If a
-valid record_separator is found then it will be set according to what
-was in the file.
+reading the last 2 characters to determine the proper separator. If a
+seek can not be performed or the last 2 characters are not a proper
+separator the record_separator will default to $/ or the value passed
+in. If a valid record_separator is found then it will be set according
+to what was in the file.
 
 =item trim_white_space
 
@@ -1200,13 +1200,13 @@ For output files, be sure to open the file in write mode.
 
 =head2 record_separator
 
-Returns the curently used record_separator. This is used primarly in
-situations where you open a qif file with autodetect and then want to
-write out a qif file in the same format.
+Returns the currently used record_separator. This is used primarly in
+situations where you open a QIF file with autodetect and then want to
+write out a QIF file in the same format.
 
-  my $in  = Finance::QIF->new( file => "input.qif", autodetect=>1 );
+  my $in  = Finance::QIF->new( file => "input.qif", autodetect => 1 );
   my $out = Finance::QIF->new( file => ">write.qif",
-                               record_separator=>$in->record_separator() );
+                               record_separator => $in->record_separator() );
 
 =head2 open( [IO::File->new arguments] )
 
