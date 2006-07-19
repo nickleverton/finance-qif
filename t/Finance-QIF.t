@@ -26,86 +26,82 @@ my $tempfile = "t/temp.qif";
 
     my $obj = $package->new;
     isa_ok( $obj, $package );
-    is( $obj->{debug}, 0, "default debug value" );
-    is( $obj->{autodetect}, 0, "default autodetect value" );
-    is( $obj->{trim_white_space}, 0, "default trim_white_space value" );
+    is( $obj->{debug},            0,  "default debug value" );
+    is( $obj->{autodetect},       0,  "default autodetect value" );
+    is( $obj->{trim_white_space}, 0,  "default trim_white_space value" );
     is( $obj->record_separator(), $/, "default record separator" );
 
     $obj = $package->new(
-        debug                   => 1,
-        record_separator        => "X\rX\n"
+        debug            => 1,
+        record_separator => "X\rX\n"
     );
     is( $obj->{debug}, 1, "custom debug value" );
-    is( $obj->record_separator(),
-        "X\rX\n", "custom record separator" );
+    is( $obj->record_separator(), "X\rX\n", "custom record separator" );
 
-    $obj = $package->new(
-        input_record_separator => "X\rX\n"
-    );
-    is( $obj->record_separator(),
-        "X\rX\n", "custom input record separator" );
+    $obj = $package->new( input_record_separator => "X\rX\n" );
+    is( $obj->record_separator(), "X\rX\n", "custom input record separator" );
 
-    $obj = $package->new(
-        output_record_separator => "X\rX\n"
-    );
-    is( $obj->record_separator(),
-        "X\rX\n", "custom output record separator" );
+    $obj = $package->new( output_record_separator => "X\rX\n" );
+    is( $obj->record_separator(), "X\rX\n", "custom output record separator" );
 }
 
 {    # autodetect
 
-    my $temp=IO::File->new(">".$tempfile);
+    my $temp = IO::File->new( ">" . $tempfile );
     $temp->close();
-    my $obj = $package->new(file=>$tempfile,autodetect=>1);
+    my $obj = $package->new( file => $tempfile, autodetect => 1 );
     is( $obj->record_separator(), $/, "autodetect default record separator" );
 
-    $temp=IO::File->new(">".$tempfile);
-    print($temp  "Testing Windows\r\n");
+    $temp = IO::File->new( ">" . $tempfile );
+    print( $temp "Testing Windows\r\n" );
     $temp->close();
-    $obj = $package->new(file=>$tempfile,autodetect=>1);
-    is( $obj->record_separator(), "\r\n", 
-        "autodetect windows record separator" );
+    $obj = $package->new( file => $tempfile, autodetect => 1 );
+    is( $obj->record_separator(),
+        "\r\n", "autodetect windows record separator" );
 
-    $temp=IO::File->new(">".$tempfile);
-    print($temp "Testing Mac\r");
+    $temp = IO::File->new( ">" . $tempfile );
+    print( $temp "Testing Mac\r" );
     $temp->close();
-    $obj = $package->new(file=>$tempfile,autodetect=>1);
-    is( $obj->record_separator(), "\r", 
-        "autodetect mac record separator" );
+    $obj = $package->new( file => $tempfile, autodetect => 1 );
+    is( $obj->record_separator(), "\r", "autodetect mac record separator" );
 
-    $temp=IO::File->new(">".$tempfile);
-    print($temp "Testing Unix\n");
+    $temp = IO::File->new( ">" . $tempfile );
+    print( $temp "Testing Unix\n" );
     $temp->close();
-    $obj = $package->new(file=>$tempfile,autodetect=>1);
-    is( $obj->record_separator(), "\n", 
-        "autodetect unix record separator" );
+    $obj = $package->new( file => $tempfile, autodetect => 1 );
+    is( $obj->record_separator(), "\n", "autodetect unix record separator" );
 
-    unlink($tempfile); 
+    unlink($tempfile);
 }
 
 {    # trim_white_space
 
-    my $temp=IO::File->new(">".$tempfile);
-    print($temp "!Type:Security\nNIntuit \nS INTU\nT Stock \nGHigh Risk\n^\n");
+    my $temp = IO::File->new( ">" . $tempfile );
+    print( $temp
+          "!Type:Security\nNIntuit \nS INTU\nT Stock \nGHigh Risk\n^\n" );
     $temp->close();
 
-    my $obj = $package->new(file=>$tempfile,autodetect=>1);
-    ok( $obj->{trim_white_space} == 0,          "trim_white_space not set" );
+    my $obj = $package->new( file => $tempfile, autodetect => 1 );
+    ok( $obj->{trim_white_space} == 0, "trim_white_space not set" );
     my $record = $obj->next();
 
-    ok( $record->{security}     eq "Intuit ",  "trim_white_space trailing" );
-    ok( $record->{symbol}       eq " INTU",    "trim_white_space leading" );
-    ok( $record->{type}         eq " Stock ",  "trim_white_space both" );
+    ok( $record->{security} eq "Intuit ", "trim_white_space trailing" );
+    ok( $record->{symbol}   eq " INTU",   "trim_white_space leading" );
+    ok( $record->{type}     eq " Stock ", "trim_white_space both" );
 
-    $obj = $package->new(file=>$tempfile,autodetect=>1,trim_white_space=>1);
-    ok( $obj->{trim_white_space} == 1,          "trim_white_space set" );
+    $obj = $package->new(
+        file             => $tempfile,
+        autodetect       => 1,
+        trim_white_space => 1
+    );
+    ok( $obj->{trim_white_space} == 1, "trim_white_space set" );
     $record = $obj->next();
 
-    ok( $record->{security}     eq "Intuit",   "trim_white_space trailing" );
-    ok( $record->{symbol}       eq "INTU",     "trim_white_space leading" );
-    ok( $record->{type}         eq "Stock",    "trim_white_space both" );
+    ok( $record->{security} eq "Intuit", "trim_white_space trailing" );
+    ok( $record->{symbol}   eq "INTU",   "trim_white_space leading" );
+    ok( $record->{type}     eq "Stock",  "trim_white_space both" );
 
-    unlink($tempfile); 
+    unlink($tempfile);
 }
 
 {    # reset
@@ -113,25 +109,29 @@ my $tempfile = "t/temp.qif";
 
     my $obj = $package->new;
     eval { $obj->reset };
-    like( $@, qr/^No filehandle available/,
-          "reset without a filehandle croaks"
-        );
+    like(
+        $@,
+        qr/^No filehandle available/,
+        "reset without a filehandle croaks"
+    );
 
-    my $temp=IO::File->new(">".$tempfile);
-    print($temp "!Type:Security\nNIntuit\nSINTU\nTStock\nGHigh Risk\n^\n");
+    my $temp = IO::File->new( ">" . $tempfile );
+    print( $temp "!Type:Security\nNIntuit\nSINTU\nTStock\nGHigh Risk\n^\n" );
     $temp->close();
 
-    $obj = $package->new(file=>$tempfile,autodetect=>1);
+    $obj = $package->new( file => $tempfile, autodetect => 1 );
     my $record1 = $obj->next();
     $obj->reset();
     my $record2 = $obj->next();
 
-    ok( $record1->{header}    eq $record2->{header}   &&
-        $record1->{security}  eq $record2->{security} &&
-        $record1->{symbol}    eq $record2->{symbol}   &&
-        $record1->{type}      eq $record2->{type}     &&
-        $record1->{goal}      eq $record2->{goal},
-        "reset reads same record" );
+    ok(
+        $record1->{header}        eq $record2->{header}
+          && $record1->{security} eq $record2->{security}
+          && $record1->{symbol}   eq $record2->{symbol}
+          && $record1->{type}     eq $record2->{type}
+          && $record1->{goal}     eq $record2->{goal},
+        "reset reads same record"
+    );
 }
 
 {    # file
@@ -189,12 +189,12 @@ my $tempfile = "t/temp.qif";
 
 testfile( "Read ", $testfile );
 my $in = $package->new(
-    file             => $testfile,
-    autodetect       => 1
+    file       => $testfile,
+    autodetect => 1
 );
 binmode $in->_filehandle;
 my $out = $package->new(
-    file             => ">".$tempfile,
+    file             => ">" . $tempfile,
     record_separator => $in->record_separator
 );
 binmode $out->_filehandle;
@@ -222,29 +222,25 @@ testfile( "Write ", $tempfile );
 unlink($tempfile);
 
 #test default write/write works
-$out = $package->new(
-    file             => ">".$tempfile,
-);
-my $record={header    =>  "Type:Security",
-            security  =>  "Intuit",
-            symbol    =>  "INTU",
-            type      =>  "Stock",
-            goal      =>  "High Risk"};
-$out->header($record->{header});
+$out = $package->new( file => ">" . $tempfile, );
+my $record = {
+    header   => "Type:Security",
+    security => "Intuit",
+    symbol   => "INTU",
+    type     => "Stock",
+    goal     => "High Risk"
+};
+$out->header( $record->{header} );
 $out->write($record);
 $out->close();
-$in = $package->new(
-    file             => $tempfile,
-);
+$in = $package->new( file => $tempfile, );
 $record = $in->next();
-ok( $record->{header}      eq "Type:Security",     "default write/read" );
-ok( $record->{security}    eq "Intuit",            "default write/read" );
-ok( $record->{symbol}      eq "INTU",              "default write/read" );
-ok( $record->{type}        eq "Stock",             "default write/read" );
-ok( $record->{goal}        eq "High Risk",         "default write/read" );
+ok( $record->{header}   eq "Type:Security", "default write/read" );
+ok( $record->{security} eq "Intuit",        "default write/read" );
+ok( $record->{symbol}   eq "INTU",          "default write/read" );
+ok( $record->{type}     eq "Stock",         "default write/read" );
+ok( $record->{goal}     eq "High Risk",     "default write/read" );
 unlink($tempfile);
-
-
 
 # Need a test for confirming we don't interfere with other open files
 # reading input with different line separator.
@@ -253,7 +249,7 @@ sub testfile {
     my $test = shift;
     my $file = shift;
     my $qif  = $package->new(
-        file                   => $file,
+        file             => $file,
         record_separator => "\n"
     );
     binmode $qif->_filehandle();
