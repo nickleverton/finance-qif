@@ -1133,20 +1133,22 @@ Can be used to redefine the QIF record separator.  Default is $/.
 Note: For MacOS X it will most likely be necessary to change this to
 "\r". Quicken on MacOS X generates files with "\r" as the separator
 which is typical of Mac however the native perl in MacOS X is unix
-based and uses the default unix separator which is "\n".
+based and uses the default unix separator which is "\n". See L</auto_detect> for another option.
 
-=item input_record_separator DEPRECIATED use record_separator
+=item input_record_separator
 
-  will not be supported next release
+DEPRECIATED use record_separator will not be supported next release.
 
-=item output_record_separator DEPRECIATED use record_separator
+=item output_record_separator
 
-  will not be supported next release
+DEPRECIATED use record_separator will not be supported next release.
 
 =item auto_detect
 
 Enable auto detection of the record separator based on the file
 contents. Default is "0".
+
+  my $in = Finance::QIF->new( auto_detect => 1 );
 
 Perl uses $/ to define line separators for text files. Perl sets this
 value according to the OS perl is running on:
@@ -1183,14 +1185,14 @@ Can be used to output debug information.  Default is "0".
 
 =back
 
-=head2 file( <IO::File->new arguments> )
+=head2 file()
 
 Specify file name and optionally additional parameters that will be
 used to obtain a filehandle.  The argument can be a filename (SCALAR)
 an ARRAY reference or an ARRAY whose values must be valid arguments
 for passing to IO::File->new.
 
-  $qif->file("myfile");
+  $qif->file( "myfile" );
  OR
   $qif->file( [ "myfile", "<:crlf" ] );
  OR
@@ -1198,7 +1200,7 @@ for passing to IO::File->new.
 
 For output files, be sure to open the file in write mode.
 
-=head2 record_separator
+=head2 record_separator()
 
 Returns the currently used record_separator. This is used primarly in
 situations where you open a QIF file with autodetect and then want to
@@ -1208,15 +1210,13 @@ write out a QIF file in the same format.
   my $out = Finance::QIF->new( file => ">write.qif",
                                record_separator => $in->record_separator() );
 
-=head2 open( [IO::File->new arguments] )
+=head2 open()
 
 Open already specified file.
 
   $qif->open();
 
-Opens specified file.
-
-  $qif->open("myfile");
+Open also supports the same arguments as L</file()>.
 
 =head2 next()
 
@@ -1231,7 +1231,7 @@ Returns null if no more records are available.
 For output files use to output the passed header for records that will
 then be written with write.
 
-  $out->header("Type:Bank");
+  $out->header( "Type:Bank" );
 
 See L<RECORD TYPES & VALUES> for list of possible record types that
 can be passed.
@@ -1240,7 +1240,7 @@ can be passed.
 
 For output files use to output the passed record to the file.
 
-  $out->write($record);
+  $out->write( $record );
 
 =head2 reset()
 
