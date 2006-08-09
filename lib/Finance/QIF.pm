@@ -1133,7 +1133,7 @@ Can be used to redefine the QIF record separator.  Default is $/.
 Note: For MacOS X it will most likely be necessary to change this to
 "\r". Quicken on MacOS X generates files with "\r" as the separator
 which is typical of Mac however the native perl in MacOS X is unix
-based and uses the default unix separator which is "\n". See L</auto_detect> for another option.
+based and uses the default unix separator which is "\n". See L</autodetect> for another option.
 
 =item input_record_separator
 
@@ -1143,12 +1143,12 @@ DEPRECIATED use record_separator will not be supported next release.
 
 DEPRECIATED use record_separator will not be supported next release.
 
-=item auto_detect
+=item autodetect
 
 Enable auto detection of the record separator based on the file
 contents. Default is "0".
 
-  my $in = Finance::QIF->new( auto_detect => 1 );
+  my $in = Finance::QIF->new( autodetect => 1 );
 
 Perl uses $/ to define line separators for text files. Perl sets this
 value according to the OS perl is running on:
