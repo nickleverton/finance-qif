@@ -159,7 +159,7 @@ sub new {
     $self->{debug}            = $opt{debug}            || 0;
     $self->{autodetect}       = $opt{autodetect}       || 0;
     $self->{trim_white_space} = $opt{trim_white_space} || 0;
-    $self->{record_separator} = $opt{record_separator}
+         $self->{record_separator} = $opt{record_separator}
       || $opt{input_record_separator}
       || $opt{output_record_separator}
       || $/;
@@ -372,7 +372,7 @@ sub _parseline {
 
 sub _getline {
     my $self = shift;
-    local $/ = $self->{record_separator};
+    local $/ = $self->record_separator;
     my $line = $self->_filehandle->getline;
     chomp($line);
     $self->{_linecount}++;
@@ -539,8 +539,7 @@ sub _writeline {
 sub reset {
     my $self = shift;
     map( $self->{$_} = undef,    # initialize internally used variables
-        qw(_linecount header currentheader reversemap reversesplitsmap)
-    );
+        qw(_linecount header currentheader reversemap reversesplitsmap) );
     $self->_filehandle->seek( 0, 0 );
 }
 
@@ -1131,26 +1130,27 @@ Can be used to redefine the QIF record separator.  Default is $/.
   my $in = Finance::QIF->new( record_separator => "\n" );
 
 Note: For MacOS X it will most likely be necessary to change this to
-"\r". Quicken on MacOS X generates files with "\r" as the separator
+"\r".  Quicken on MacOS X generates files with "\r" as the separator
 which is typical of Mac however the native perl in MacOS X is unix
-based and uses the default unix separator which is "\n". See L</autodetect> for another option.
+based and uses the default unix separator which is "\n".  See
+L</autodetect> for another option.
 
 =item input_record_separator
 
-DEPRECIATED use record_separator will not be supported next release.
+DEPRECATED: use record_separator, this will not be supported next release.
 
 =item output_record_separator
 
-DEPRECIATED use record_separator will not be supported next release.
+DEPRECATED: use record_separator, this will not be supported next release.
 
 =item autodetect
 
 Enable auto detection of the record separator based on the file
-contents. Default is "0".
+contents.  Default is "0".
 
   my $in = Finance::QIF->new( autodetect => 1 );
 
-Perl uses $/ to define line separators for text files. Perl sets this
+Perl uses $/ to define line separators for text files.  Perl sets this
 value according to the OS perl is running on:
 
   Windows="\r\n"
@@ -1202,13 +1202,13 @@ For output files, be sure to open the file in write mode.
 
 =head2 record_separator()
 
-Returns the currently used record_separator. This is used primarly in
+Returns the currently used record_separator.  This is used primarly in
 situations where you open a QIF file with autodetect and then want to
 write out a QIF file in the same format.
 
   my $in  = Finance::QIF->new( file => "input.qif", autodetect => 1 );
   my $out = Finance::QIF->new( file => ">write.qif",
-                               record_separator => $in->record_separator() );
+                               record_separator => $in->record_separator );
 
 =head2 open()
 
@@ -1224,7 +1224,7 @@ For input files return the next record in the QIF file.
 
   my $record = $in->next();
 
-Returns null if no more records are available.
+Returns undef if no more records are available.
 
 =head2 header()
 
