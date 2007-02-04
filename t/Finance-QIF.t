@@ -4,7 +4,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 930;
+use Test::More tests => 964;
 use File::Temp;
 
 my $DOWARN;
@@ -321,6 +321,10 @@ sub testfile {
         ok( $record->{balance}     eq "2,651.00",          $test . "Account" );
     }
 
+    # Added a trailing space to the !Clear:AutoSwitch line in data file.
+    # We should test to make sure it is processed as a accepted header and
+    # that no error message was generated during processing.
+
     # security tests
     {
         my $record = $qif->next;
@@ -356,7 +360,31 @@ sub testfile {
         ok( $record->{description} eq "Automobile Expenses",
             $test . "Category" );
         ok( $record->{expense} eq "", $test . "Category" );
-        for ( my $count = 0 ; $count < 95 ; $count++ ) {
+        for ( my $count = 0 ; $count < 21 ; $count++ ) {
+            $record = $qif->next;
+            ok( $record->{header} eq "Type:Cat", $test . "Category" );
+        }
+        $record = $qif->next;
+        ok( $record->{header}      eq "Type:Cat",        $test . "Category" );
+        ok( $record->{name}        eq "Interest Inc",    $test . "Category" );
+        ok( $record->{description} eq "Interest Income", $test . "Category" );
+        ok( $record->{income}      eq "",                $test . "Category" );
+        ok( $record->{tax}         eq "",                $test . "Category" );
+        ok( $record->{schedule}    eq "4592",            $test . "Category" );
+        ok( $record->{budget}[0]   eq "1.00",            $test . "Category" );
+        ok( $record->{budget}[1]   eq "0.00",            $test . "Category" );
+        ok( $record->{budget}[2]   eq "0.00",            $test . "Category" );
+        ok( $record->{budget}[3]   eq "1.00",            $test . "Category" );
+        ok( $record->{budget}[4]   eq "0.00",            $test . "Category" );
+        ok( $record->{budget}[5]   eq "0.00",            $test . "Category" );
+        ok( $record->{budget}[6]   eq "1.00",            $test . "Category" );
+        ok( $record->{budget}[7]   eq "0.00",            $test . "Category" );
+        ok( $record->{budget}[8]   eq "0.00",            $test . "Category" );
+        ok( $record->{budget}[9]   eq "0.00",            $test . "Category" );
+        ok( $record->{budget}[10]  eq "0.00",            $test . "Category" );
+        ok( $record->{budget}[11]  eq "1.00",            $test . "Category" );
+
+        for ( my $count = 0 ; $count < 73 ; $count++ ) {
             $record = $qif->next;
             ok( $record->{header} eq "Type:Cat", $test . "Category" );
         }

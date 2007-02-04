@@ -6,7 +6,7 @@ use warnings;
 use Carp;
 use IO::File;
 
-our $VERSION = '2.04';
+our $VERSION = '2.05';
 $VERSION = eval $VERSION;
 
 my %noninvestment = (
@@ -59,6 +59,7 @@ my %account = (
 my %category = (
     "N" => "name",
     "D" => "description",
+    "B" => "budget",
     "E" => "expense",
     "I" => "income",
     "T" => "tax",
@@ -73,6 +74,8 @@ my %class = (
 my %memorized = (
     "K" => "transaction",
     "T" => "amount",
+    "U" => "total",        #Quicken 2005 added this which is usually the same as
+                           #as T but can sometimes be higher.
     "C" => "status",
     "P" => "payee",
     "M" => "memo",
@@ -251,6 +254,7 @@ sub next {
         next if ( $line =~ /^\s*$/ );
         my ( $field, $value ) = $self->_parseline($line);
         if ( $field eq '!' ) {
+            $value =~ s/\s+$//;    # Headers sometimes have trailing white space
             $self->{header} = $value;
             $object{header} = $value;
             if ( !exists( $header{$value} ) ) {
@@ -814,6 +818,11 @@ Name of category.
 
 Description of category.
 
+=item budget
+
+An array of 12 values Jan-Dec to represent the budget amount for each
+month.
+
 =item expense
 
 Usually exists if the category is an expense account however this is
@@ -866,6 +875,11 @@ payment, "I" for investment, and "E" for electronic payee.
 =item amount
 
 Dollar amount of transaction.
+
+=item total
+
+Dollar amount of transaction. This is generally the same as amount but
+in some cases can be higher. (Introduced in Quicken 2005 for windows)
 
 =item status
 
@@ -997,7 +1011,7 @@ Exists if this category is tax related.
 If this category is tax related this specifies what tax schedule it is
 related if defined.
 
-=item amount
+=item budget
 
 An array of 12 values Jan-Dec to represent the budget amount for each
 month.
@@ -1188,7 +1202,7 @@ Can be used to output debug information.  Default is "0".
 =head2 file()
 
 Specify file name and optionally additional parameters that will be
-used to obtain a filehandle.  The argument can be a filename (SCALAR)
+used to obtain a filehandle.  The argument can be a filename (SCALAR),
 an ARRAY reference or an ARRAY whose values must be valid arguments
 for passing to IO::File->new.
 
