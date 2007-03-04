@@ -1307,12 +1307,15 @@ Matthew McGillis E<lt>matthew@mcgillis.orgE<gt> L<http://www.mcgillis.org/>
 
 Phil Lobbes E<lt>phil at perkpartners dot comE<gt>
 
-Project maintaned at L<http://sourceforge.net/projects/finance-qif>
+Project maintained at L<http://sourceforge.net/projects/finance-qif>
 
 =head1 COPYRIGHT
 
-Copyright (C) 2006 by Matthew McGillis.  All rights reserved.  This
-library is free software; you can redistribute it and/or modify it
-under the same terms as Perl itself.
+Copyright (C) 2006-2007 by Matthew McGillis.  All rights reserved.
+
+=head1 LICENSE
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
 
 =cut
