@@ -9,4 +9,3 @@ t/pod.t
 t/qifdumper
 t/readwrite
 t/test.qif
-META.yml                                 Module meta-data (added by MakeMaker)
