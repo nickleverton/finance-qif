@@ -1,4 +1,6 @@
 Changes
+examples/qifdumper
+examples/readwrite
 lib/Finance/QIF.pm
 Makefile.PL
 MANIFEST
@@ -6,6 +8,4 @@ README
 t/Finance-QIF.t
 t/pod-coverage.t
 t/pod.t
-t/qifdumper
-t/readwrite
 t/test.qif
