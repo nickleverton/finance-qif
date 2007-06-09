@@ -1203,7 +1203,7 @@ Can be used to output debug information.  Default is "0".
 
 Specify file name and optionally additional parameters that will be
 used to obtain a filehandle.  The argument can be a filename (SCALAR),
-an ARRAY reference or an ARRAY whose values must be valid arguments
+an ARRAY reference, or an ARRAY whose values must be valid arguments
 for passing to IO::File->new.
 
   $qif->file( "myfile" );
