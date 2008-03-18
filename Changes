@@ -1,7 +1,8 @@
 Revision history for Perl extension Finance::QIF.
 
 2.07  Tue Mar 18 12:06:00 2008
-        - No changes to actual code other than version number
+        - No changes to actual code other than version number and COPYRIGHT
+          update.
         - Added Requirement for IO::File 1.13
         - Fixed tests so new test using "<:crlf" format is only done for
           perl 5.008

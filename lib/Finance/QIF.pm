@@ -1311,7 +1311,7 @@ Project maintained at L<http://sourceforge.net/projects/finance-qif>
 
 =head1 COPYRIGHT
 
-Copyright (C) 2006-2007 by Matthew McGillis.  All rights reserved.
+Copyright (C) 2006-2008 by Matthew McGillis.  All rights reserved.
 
 =head1 LICENSE
 
