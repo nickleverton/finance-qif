@@ -6,7 +6,7 @@ use warnings;
 use Carp;
 use IO::File;
 
-our $VERSION = '2.06';
+our $VERSION = '2.07';
 $VERSION = eval $VERSION;
 
 my %noninvestment = (
