@@ -5,7 +5,7 @@
 use strict;
 use warnings;
 use Test::More tests => 998;
-use File::Temp;
+use File::Temp qw(tempfile);
 
 my $DOWARN;
 
@@ -42,43 +42,43 @@ my $testfile = "t/test.qif";
 }
 
 {    # autodetect
-    my ( $fh, $obj );
+    my ( $fh, $fn, $obj );
 
-    $fh = File::Temp->new;
-    $fh->close;
+    ( $fh, $fn ) = tempfile();
+    close($fh);
 
-    $obj = $package->new( file => $fh->filename, autodetect => 1 );
+    $obj = $package->new( file => $fn, autodetect => 1 );
     is( $obj->record_separator, $/, "autodetect default record separator" );
 
-    $fh = File::Temp->new;
+    ( $fh, $fn ) = tempfile();
     print( $fh "Testing Windows\r\n" );
-    $fh->close;
+    close($fh);
 
-    $obj = $package->new( file => $fh->filename, autodetect => 1 );
+    $obj = $package->new( file => $fn, autodetect => 1 );
     is( $obj->record_separator, "\r\n", "autodetect windows record separator" );
 
-    $fh = File::Temp->new;
+    ( $fh, $fn ) = tempfile();
     print( $fh "Testing Mac\r" );
-    $fh->close;
+    close($fh);
 
-    $obj = $package->new( file => $fh->filename, autodetect => 1 );
+    $obj = $package->new( file => $fn, autodetect => 1 );
     is( $obj->record_separator, "\r", "autodetect mac record separator" );
 
-    $fh = File::Temp->new;
+    ( $fh, $fn ) = tempfile();
     print( $fh "Testing Unix\n" );
-    $fh->close;
+    close($fh);
 
-    $obj = $package->new( file => $fh->filename, autodetect => 1 );
+    $obj = $package->new( file => $fn, autodetect => 1 );
     is( $obj->record_separator, "\n", "autodetect unix record separator" );
 }
 
 {    # trim_white_space
 
-    my $fh = File::Temp->new;
+    my ( $fh, $fn ) = tempfile();
     print( $fh "!Type:Security\nNIntuit \nS INTU\nT Stock \nGHigh Risk\n^\n" );
-    $fh->close;
+    close($fh);
 
-    my $obj = $package->new( file => $fh->filename, autodetect => 1 );
+    my $obj = $package->new( file => $fn, autodetect => 1 );
     ok( $obj->{trim_white_space} == 0, "trim_white_space not set" );
     my $record = $obj->next();
 
@@ -87,7 +87,7 @@ my $testfile = "t/test.qif";
     ok( $record->{type}     eq " Stock ", "trim_white_space both" );
 
     $obj = $package->new(
-        file             => $fh->filename,
+        file             => $fn,
         autodetect       => 1,
         trim_white_space => 1
     );
@@ -110,11 +110,11 @@ my $testfile = "t/test.qif";
         "reset without a filehandle croaks"
     );
 
-    my $fh = File::Temp->new;
+    my ( $fh, $fn ) = tempfile();
     print( $fh "!Type:Security\nNIntuit\nSINTU\nTStock\nGHigh Risk\n^\n" );
-    $fh->close;
+    close($fh);
 
-    $obj = $package->new( file => $fh->filename, autodetect => 1 );
+    $obj = $package->new( file => $fn, autodetect => 1 );
     my $record1 = $obj->next;
     $obj->reset;
     my $record2 = $obj->next;
@@ -192,10 +192,10 @@ my $in = $package->new(
 );
 binmode $in->_filehandle;
 
-my $fh = File::Temp->new;
-$fh->close;
+my ( $fh, $fn ) = tempfile();
+close($fh);
 
-my $tempfile = $fh->filename;
+my $tempfile = $fn;
 
 my $out = $package->new(
     file             => ">" . $tempfile,
