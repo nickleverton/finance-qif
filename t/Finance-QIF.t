@@ -51,25 +51,25 @@ my $testfile = "t/test.qif";
     is( $obj->record_separator, $/, "autodetect default record separator" );
 
     ( $fh, $fn ) = tempfile();
-    print( $fh "Testing Windows\r\n" );
+    print( $fh "Testing Windows\015\012" );
     close($fh);
 
     $obj = $package->new( file => $fn, autodetect => 1 );
-    is( $obj->record_separator, "\r\n", "autodetect windows record separator" );
+    is( $obj->record_separator, "\015\012", "autodetect windows record separator" );
 
     ( $fh, $fn ) = tempfile();
-    print( $fh "Testing Mac\r" );
+    print( $fh "Testing Mac\015" );
     close($fh);
 
     $obj = $package->new( file => $fn, autodetect => 1 );
-    is( $obj->record_separator, "\r", "autodetect mac record separator" );
+    is( $obj->record_separator, "\015", "autodetect mac record separator" );
 
     ( $fh, $fn ) = tempfile();
-    print( $fh "Testing Unix\n" );
+    print( $fh "Testing Unix\012" );
     close($fh);
 
     $obj = $package->new( file => $fn, autodetect => 1 );
-    is( $obj->record_separator, "\n", "autodetect unix record separator" );
+    is( $obj->record_separator, "\012", "autodetect unix record separator" );
 }
 
 {    # trim_white_space
@@ -190,7 +190,6 @@ my $in = $package->new(
     file       => $testfile,
     autodetect => 1
 );
-binmode $in->_filehandle;
 
 my ( $fh, $fn ) = tempfile();
 close($fh);
@@ -201,7 +200,6 @@ my $out = $package->new(
     file             => ">" . $tempfile,
     record_separator => $in->record_separator
 );
-binmode $out->_filehandle;
 
 # Trap warning so we can validate message returned.
 $DOWARN = 0;
@@ -254,7 +252,6 @@ sub testfile {
         file             => $file,
         record_separator => "\n"
     );
-    binmode $qif->_filehandle;
 
     # account tests
     {

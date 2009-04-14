@@ -6,14 +6,14 @@ use warnings;
 use Carp;
 use IO::File;
 
-our $VERSION = '3.00';
+our $VERSION = '3.01_01';
 $VERSION = eval $VERSION;
 
 my %noninvestment = (
     "D" => "date",
     "T" => "transaction",
-    "U" => "total",      #Quicken 2005 added this which is usually the same as
-                         #as T but can sometimes be higher.
+    "U" => "total",         #Quicken 2005 added this which is usually the same
+                            #as T but can sometimes be higher.
     "C" => "status",
     "N" => "number",
     "P" => "payee",
@@ -36,7 +36,7 @@ my %investment = (
     "I" => "price",
     "Q" => "quantity",
     "T" => "transaction",
-    "U" => "total",        #Quicken 2005 added this which is usually the same as
+    "U" => "total",        #Quicken 2005 added this which is usually the same
                            #as T but can sometimes be higher.
     "C" => "status",
     "P" => "text",
@@ -223,14 +223,14 @@ sub open {
             if ( $self->_filehandle->seek( -2, 2 ) ) {
                 my $buffer = "";
                 $self->_filehandle->read( $buffer, 2 );
-                if ( $buffer eq "\r\n" ) {
-                    $self->{record_separator} = "\r\n";
+                if ( $buffer eq "\015\012" ) {
+                    $self->{record_separator} = "\015\012";
                 }
-                elsif ( $buffer =~ /\n$/ ) {
-                    $self->{record_separator} = "\n";
+                elsif ( $buffer =~ /\012$/ ) {
+                    $self->{record_separator} = "\012";
                 }
-                elsif ( $buffer =~ /\r$/ ) {
-                    $self->{record_separator} = "\r";
+                elsif ( $buffer =~ /\015$/ ) {
+                    $self->{record_separator} = "\015";
                 }
             }
         }
@@ -314,9 +314,7 @@ sub next {
                     push( @{ $object{splits} }, \%mysplit );
                     $csplit = \%mysplit;
                 }
-                elsif (
-                    ( $field eq 'E' || $field eq '$' ) && $csplit)
-                {
+                elsif ( ( $field eq 'E' || $field eq '$' ) && $csplit ) {
 
                     # this currently assumes the "S" was found first
                     $csplit->{ $split{$field} } = $value;
@@ -356,15 +354,15 @@ sub _parseline {
         my %price;
         $line =~ s/\"//g;
         my @data = split( ",", $line );
-        $result[0]       = $data[0];
-        $price{"close"}  = $data[1];
-        $price{"date"}   = $data[2];
-        if (scalar(@data)>3) {
-          $price{"max"}    = $data[3];
-          $price{"min"}    = $data[4];
-          $price{"volume"} = $data[5];
+        $result[0]      = $data[0];
+        $price{"close"} = $data[1];
+        $price{"date"}  = $data[2];
+        if ( scalar(@data) > 3 ) {
+            $price{"max"}    = $data[3];
+            $price{"min"}    = $data[4];
+            $price{"volume"} = $data[5];
         }
-        $result[1]       = \%price;
+        $result[1] = \%price;
     }
     else {
         $result[0] = substr( $line, 0, 1 );
@@ -444,8 +442,8 @@ sub write {
                                 $price->{volume} )
                         );
                     }
-                    elsif (    exists( $price->{close} )
-                            && exists( $price->{date} ) )
+                    elsif (exists( $price->{close} )
+                        && exists( $price->{date} ) )
                     {
                         $self->_writeline(
                             join( ",",
@@ -1170,12 +1168,12 @@ For output files, be sure to open the file in write mode.  For example:
 
 Can be used to redefine the QIF record separator.  Default is $/.
 
-  my $in = Finance::QIF->new( record_separator => "\n" );
+  my $in = Finance::QIF->new( record_separator => "\012" );
 
 Note: For MacOS X it will most likely be necessary to change this to
-"\r".  Quicken on MacOS X generates files with "\r" as the separator
+"\015".  Quicken on MacOS X generates files with "\015" as the separator
 which is typical of Mac however the native perl in MacOS X is unix
-based and uses the default unix separator which is "\n".  See
+based and uses the default unix separator which is "\012".  See
 L</autodetect> for another option.
 
 =item autodetect
@@ -1188,9 +1186,9 @@ contents.  Default is "0".
 Perl uses $/ to define line separators for text files.  Perl sets this
 value according to the OS perl is running on:
 
-  Windows="\r\n"
-  Mac="\r"
-  Unix="\n"
+  Windows="\015\012"
+  Mac="\015"
+  Unix="\012"
 
 In many cases you may find yourself with text files that do not match
 the OS.  In these cases Finance::QIF by default will not process that
