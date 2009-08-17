@@ -203,7 +203,7 @@ sub _filehandle {
         my @args = @_;
         $self->{_filehandle} = IO::File->new(@args)
           or croak("Failed to open file '$args[0]': $!");
-        $self->{_filehandle}->binmode();
+        binmode( $self->{_filehandle} );
         $self->{_linecount} = 0;
     }
     if ( !$self->{_filehandle} ) {
