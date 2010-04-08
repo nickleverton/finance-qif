@@ -6,7 +6,7 @@ use warnings;
 use Carp;
 use IO::File;
 
-our $VERSION = '3.01_01';
+our $VERSION = '3.01';
 $VERSION = eval $VERSION;
 
 my %noninvestment = (
@@ -36,8 +36,8 @@ my %investment = (
     "I" => "price",
     "Q" => "quantity",
     "T" => "transaction",
-    "U" => "total",        #Quicken 2005 added this which is usually the same
-                           #as T but can sometimes be higher.
+    "U" => "total",         #Quicken 2005 added this which is usually the same
+                            #as T but can sometimes be higher.
     "C" => "status",
     "P" => "text",
     "M" => "memo",
@@ -799,9 +799,9 @@ limit over credit.
 
 Defined if the account is tax related.
 
-=item address
+=item note
 
-Address associated with the account.
+Additional information about the account.
 
 =item type
 
@@ -923,6 +923,10 @@ Security name of transaction. (Inroduced in Quicken 2006 for windows)
 =item price
 
 Price of security. (Inroduced in Quicken 2006 for windows)
+
+=item quantity
+
+Quantity of security. (Inroduced in Quicken 2006 for windows)
 
 =item amount
 
