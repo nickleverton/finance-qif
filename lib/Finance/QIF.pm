@@ -9,6 +9,8 @@ use IO::File;
 our $VERSION = '3.02';
 $VERSION = eval $VERSION;
 
+our $die = \&Carp::croak;
+
 my %noninvestment = (
     "D" => "date",
     "T" => "transaction",
@@ -174,7 +176,12 @@ sub new {
     if ( $opt{file} ) {
         $self->file( $opt{file} );
         $self->open;
+    } elsif ($opt{tmpfile}) {
+        my $fh = IO::File->new_tmpfile
+	  or $die->("Failed to open tmpfile : $!");
+        $self->{_filehandle} = $fh;
     }
+
     return $self;
 }
 
@@ -202,15 +209,17 @@ sub _filehandle {
     if (@_) {
         my @args = @_;
         $self->{_filehandle} = IO::File->new(@args)
-          or croak("Failed to open file '$args[0]': $!");
+          or $die->("Failed to open file '$args[0]': $!");
         binmode( $self->{_filehandle} );
         $self->{_linecount} = 0;
     }
     if ( !$self->{_filehandle} ) {
-        croak("No filehandle available");
+        $die->("No filehandle available");
     }
     return $self->{_filehandle};
 }
+
+sub filehandle { $_[0]->_filehandle }
 
 sub open {
     my $self = shift;
@@ -237,7 +246,7 @@ sub open {
         $self->reset();
     }
     else {
-        croak("No file specified");
+        $die->("No file specified");
     }
 }
 
@@ -1172,6 +1181,15 @@ For output files, be sure to open the file in write mode.  For example:
 
   my $out = Finance::QIF->new( file => ">myfile" );
 
+=item tmpfile
+
+If "file" is not specified, then "tmpfile" causes an anonymous temporary
+output file to be created with IO::File->new_tmpfile.
+
+  my $qif = Finance::QIF->new( tmpfile => 1 );
+
+The filehandle for the temporary file can be accessed with L</filehandle()>.
+
 =item record_separator
 
 Can be used to redefine the QIF record separator.  Default is $/.
@@ -1250,6 +1268,11 @@ for passing to IO::File->new.
   $qif->file( "myfile", "<:crlf" );
 
 For output files, be sure to open the file in write mode.
+
+=head2 filehandle()
+
+If tmpfile is used to create a temporary QIF file, the filehandle()
+method will return the handle to the opened file.
 
 =head2 record_separator()
 
