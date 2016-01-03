@@ -20,6 +20,7 @@ my %noninvestment = (
     "M" => "memo",
     "A" => "address",
     "L" => "category",
+    "F" => "flag",      #Q2008 uses this to mark transactions as an expense
     "S" => "splits"
 );
 
@@ -137,6 +138,11 @@ my %price = (
     "V" => "volume"
 );
 
+my %tags = (
+    "N" => "name",
+    "D" => "description"
+);
+
 my %nofields = ();
 
 my %header = (
@@ -154,6 +160,7 @@ my %header = (
     "Type:Budget"       => \%budget,
     "Type:Payee"        => \%payee,
     "Type:Prices"       => \%prices,
+    "Type:Tag"          => \%tags,
     "Option:AutoSwitch" => \%nofields,
     "Option:AllXfr"     => \%nofields,
     "Clear:AutoSwitch"  => \%nofields
@@ -258,10 +265,13 @@ sub next {
         my ( $field, $value ) = $self->_parseline($line);
         if ( $field eq '!' ) {
             $value =~ s/\s+$//;    # Headers sometimes have trailing white space
+            $value =~ s/\xd0\xbf\x9e\x03\x03\x16/Oth L/; # more Q2008 junk
             $self->{header} = $value;
             $object{header} = $value;
             if ( !exists( $header{$value} ) ) {
-                $self->_warning("Unknown header format '$value'");
+                my $string = $value;
+                $string =~ s/(.)/sprintf("\\x%x",ord($1))/eg;
+                $self->_warning("Unknown header format '$string'");
             }
         }
         else {
@@ -278,8 +288,10 @@ sub next {
                     )
                   )
                 {
+                    my $string = $object{header};
+                    $string =~ s/(.)/sprintf("\\x%x",ord($1))/eg;
                     $self->_warning(
-                        "Unknown header '$object{header}' can't process line");
+                        "Unknown header '$string' can't process line");
                 }
                 elsif ( $object{header} eq "Type:Prices" ) {
                     $object{"symbol"} = $field;
@@ -325,6 +337,8 @@ sub next {
                     push( @{ $object{budget} }, $value );
                 }
                 elsif ( exists( $header{ $object{header} }{$field} ) ) {
+                    # Quicken 2008 uses some weird garbage instead of Oth L
+                    $value =~ s/(\x9f|\x6f)\xfd\x80\x7c\x01/Oth L/;
                     $object{ $header{ $object{header} }{$field} } = $value;
                 }
                 else {
@@ -687,6 +701,10 @@ Address of payee.
 =item category
 
 Category the transaction is assigned to.
+
+=item flag
+
+Quicken 2008 uses this to mark transactions as an expense.
 
 =item splits
 
@@ -1130,6 +1148,25 @@ Min value of security for the date.
 =item volume
 
 Number of shares of security exchanged for the date.
+
+=back
+
+=back
+
+=item Type:Tag
+
+Introduced with Quicken 2008, these allow additional categorization of
+transactions.
+
+=over
+
+=item name
+
+Name of the tag.
+
+=item description
+
+Longer description of the tag.
 
 =back
 
